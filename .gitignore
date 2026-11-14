@@ -14,6 +14,7 @@ __pycache__/
 
 # 実際の名簿をうっかりコミットしないための保険
 names*.txt
+!namepicker/sample_names.txt
 roster*.txt
 roster*.csv
 名簿*

@@ -8,12 +8,13 @@ tools（授業用ツール集）
   /tools/nisshi/       訓練日誌 下書きツール（nisshi/ フォルダ）
   /tools/chime/        チャイム表示画面（chime/ フォルダ）
   /tools/chime/admin   チャイムの設定（講師用・パスワード付き）
+  /tools/namepicker/   名前ピッカー（namepicker/ フォルダ）
 
 個人情報の扱い
   ・日別計画表PDFはブラウザの中（pdf.js）で読み取り、講師名を除いた「日付・訓練内容・時間」と
     時間割表だけを登録します。PDF そのものは送信しません。
-  ・訓練日誌の氏名・感想はブラウザの中だけで扱い、サーバーに送信・保存しません。
-    （受講者用・チャイム表示画面は Content-Security-Policy で通信を禁止しています）
+  ・訓練日誌の氏名・感想、名前ピッカーの名簿はブラウザの中だけで扱い、サーバーに送信・保存しません。
+    （受講者用・チャイム表示・名前ピッカーの画面は Content-Security-Policy で通信を禁止しています）
 """
 import json
 import mimetypes
@@ -25,6 +26,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 import core
 from chime import bp as chime_bp
+from namepicker import bp as namepicker_bp
 from nisshi import bp as nisshi_bp
 
 # pdf.js（static/vendor/pdfjs/*.mjs）を JavaScript として配るための設定。
@@ -41,6 +43,7 @@ app.jinja_env.globals["v"] = str(int(time.time()))
 
 app.register_blueprint(nisshi_bp, url_prefix="/nisshi")
 app.register_blueprint(chime_bp, url_prefix="/chime")
+app.register_blueprint(namepicker_bp, url_prefix="/namepicker")
 
 
 def csp(form_action):

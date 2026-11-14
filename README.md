@@ -9,10 +9,11 @@
 | チャイム（教室のPCで全画面表示） | `https://telcation.f5.si/tools/chime/` | `chime/` |
 | 日別計画表の登録（講師用・パスワード付き） | `https://telcation.f5.si/tools/admin` | `app.py`・`templates/admin.html` |
 | チャイムの設定（講師用・パスワード付き） | `https://telcation.f5.si/tools/chime/admin` | `chime/` |
+| 名前ピッカー | `https://telcation.f5.si/tools/namepicker/` | `namepicker/` |
 
 - アプリのポート：`5012`（nginx から `127.0.0.1:5012` へ転送。サービス名 `tools`）
 - 日別計画表と講師用パスワードは、全ツールで共通です
-- 以前の URL（`/nisshi/`）は新しい URL へ自動で転送します
+- 以前の URL（`/nisshi/`・`/namepicker/`）は新しい URL へ自動で転送します
 
 ## 訓練日誌 下書きツール（nisshi）
 
@@ -30,6 +31,14 @@
 | 保存しない | localStorage 等も使わないため、再読み込み・タブを閉じると入力内容は消える |
 | ログに残らない | サーバーのアクセスログには `GET /` や `GET /static/app.js` しか記録されない |
 | 講師名を登録しない | 日別計画表から登録するのは「日付・訓練内容・時間」だけ。担当講師名はブラウザ側で捨て、サーバー側でも受け付けない。PDF そのものも送信しない |
+
+## 名前ピッカー（namepicker）
+
+名簿テキストファイルを読み込み、欠席者を除いて「ランダム並び替え」「ランダムに1名指名」を行います（以前の [namepicker](https://github.com/telcation/namepicker) リポジトリを統合）。
+
+- 名前はブラウザの中だけで処理し、**サーバーには送信・保存しません**（通信は CSP で禁止）
+- 名簿の書き方は下の「名簿ファイルの書き方」と同じです（動作確認用：`namepicker/sample_names.txt`）
+- 「ドキュメントフォルダを最初に開く」動作は Chrome / Edge かつ HTTPS のときだけ有効です
 
 ## 日別計画表（認定様式第6号）の登録（講師用・全ツール共通）
 
@@ -117,10 +126,15 @@ tools/
 │   ├─ store.py            チャイム設定と素材の保存・検査
 │   ├─ templates/chime/chime.html / admin.html
 │   └─ static/chime.js / chime.css / admin_chime.js / chime_common.js
+├─ namepicker/             名前ピッカー（/tools/namepicker/）
+│   ├─ __init__.py
+│   ├─ templates/namepicker/index.html
+│   ├─ static/app.js / style.css
+│   └─ sample_names.txt    動作確認用のダミー名簿
 ├─ sample_roster.txt       動作確認用のダミー名簿
 ├─ deploy/
 │   ├─ tools.service       systemd 設定
-│   ├─ nginx_tools.conf    nginx 追記内容（旧 /nisshi/ からの転送つき）
+│   ├─ nginx_tools.conf    nginx 追記内容（旧 /nisshi/・/namepicker/ からの転送つき）
 │   └─ sudoers_tools       再起動許可の設定
 └─ .github/workflows/deploy.yml  自動デプロイ
 ```
@@ -141,7 +155,7 @@ Community 版・Professional 版のどちらでも動きます（Flask 専用の
 4. 右上の実行構成で「app（http://127.0.0.1:5012/）」を選んで ▶ 実行
 5. `http://127.0.0.1:5012/admin` を開き、日別計画表PDFを登録する
    （手元では初回実行時に開発用パスワードが自動で作られます。中身は `PycharmProjects\tools-data\admin_password`）
-6. `http://127.0.0.1:5012/` のトップページから、訓練日誌（`sample_roster.txt` を読み込んで確認）とチャイムを開く
+6. `http://127.0.0.1:5012/` のトップページから、訓練日誌（`sample_roster.txt` を読み込んで確認）・チャイム・名前ピッカー（`namepicker/sample_names.txt`）を開く
 
 ### GitHub リポジトリにする
 
@@ -281,9 +295,9 @@ GitHub のリポジトリ →「Settings」→「Secrets and variables」→「A
 2. 「Git」→「プッシュ」で `main` ブランチへプッシュ
 3. GitHub の「Actions」タブで「自宅サーバーへデプロイ（tools）」が緑になれば完了
 
-## 5. nisshi から tools への移行（1回だけ）
+## 5. nisshi・namepicker から tools への移行（1回だけ）
 
-以前の nisshi（`~/apps/nisshi`・サービス `nisshi`・URL `/nisshi/`）から切り替える手順です。
+以前の nisshi（`~/apps/nisshi`・サービス `nisshi`・URL `/nisshi/`）と namepicker（`~/apps/namepicker`・サービス `namepicker`・ポート5011・URL `/namepicker/`）から切り替える手順です。
 日別計画表・講師用パスワード・チャイムの設定と素材は、データフォルダの名前を変えるだけでそのまま使えます。
 
 ### 5-1. GitHub のリポジトリ名を変える
@@ -304,9 +318,11 @@ scp deploy\tools.service deploy\sudoers_tools deploy\nginx_tools.conf home:~/
 ### 5-3. サーバーで切り替える（`ssh home` で接続）
 
 ```bash
-# (1) 古い nisshi を止めて、自動起動と再起動の許可を外す（同じ 5012 番を使うため先に止める）
-sudo systemctl disable --now nisshi
+# (1) 古い nisshi・namepicker を止めて、自動起動と再起動の許可を外す（nisshi は同じ 5012 番を使うため先に止める）
+sudo systemctl disable --now nisshi namepicker
 sudo rm /etc/systemd/system/nisshi.service /etc/sudoers.d/nisshi
+sudo rm /etc/systemd/system/namepicker.service /etc/sudoers.d/namepicker
+sudo systemctl daemon-reload
 
 # (2) データフォルダの名前を変える（日別計画表・パスワード・チャイム設定・素材）
 mv ~/apps/nisshi-data ~/apps/tools-data
@@ -319,10 +335,11 @@ sudo systemctl enable tools
 sudo visudo -c -f ~/sudoers_tools \
   && sudo install -m 440 -o root -g root ~/sudoers_tools /etc/sudoers.d/tools
 
-# (4) nginx：/nisshi/ の location ブロック（location = /nisshi と location /nisshi/）を削除し、
+# (4) nginx：/nisshi/ と /namepicker/ の location ブロック
+#     （location = /nisshi・location /nisshi/・location = /namepicker・location /namepicker/）を削除し、
 #     同じ場所に ~/nginx_tools.conf の内容を貼り付ける
 sudo cp /etc/nginx/sites-enabled/telcation.conf ~/telcation.conf.bak
-grep -n "nisshi" /etc/nginx/sites-enabled/telcation.conf
+grep -n "nisshi\|namepicker" /etc/nginx/sites-enabled/telcation.conf
 cat ~/nginx_tools.conf
 sudo nano +<上で表示された最初の行番号> /etc/nginx/sites-enabled/telcation.conf
 sudo nginx -t && sudo systemctl reload nginx
@@ -335,9 +352,14 @@ rm ~/tools.service ~/sudoers_tools ~/nginx_tools.conf
 ### 5-4. プッシュしてデプロイ
 
 PyCharm でコミット・プッシュし、GitHub の「Actions」で「自宅サーバーへデプロイ（tools）」が緑になれば完了です。
-`https://telcation.f5.si/tools/` を開いて確認し、問題なければ `rm -rf ~/apps/nisshi ~/telcation.conf.bak` で古いアプリ置き場を消します。
+`https://telcation.f5.si/tools/` を開いて確認し、問題なければ `rm -rf ~/apps/nisshi ~/apps/namepicker ~/telcation.conf.bak` で古いアプリ置き場を消します。
+
+### 5-5. namepicker リポジトリの片付け
+
+namepicker リポジトリにプッシュすると、古い自動デプロイ（`~/apps/namepicker`・`systemctl restart namepicker`）が動いて失敗します。
+GitHub の namepicker リポジトリ →「Settings」→「General」のいちばん下「Archive this repository」で読み取り専用にしておくと安全です（履歴はそのまま見られます）。
 
 ## 注意点
 
 - GitHub のサーバーから自宅へ SSH するため、SSH ポートを外部公開する必要があります。パスワード認証は無効にし、鍵認証のみにしてください。SSH を外部に開けたくない場合は、サーバーに **セルフホストランナー** を入れて `runs-on: self-hosted` に変える方法があります。
-- 「ドキュメントフォルダを最初に開く」動作は Chrome / Edge かつ HTTPS のときだけ有効です。Firefox / Safari では通常のファイル選択画面になります。
+- 「ドキュメントフォルダを最初に開く」動作（訓練日誌・名前ピッカー）は Chrome / Edge かつ HTTPS のときだけ有効です。Firefox / Safari では通常のファイル選択画面になります。
