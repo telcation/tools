@@ -8,13 +8,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap">
-  <link rel="stylesheet" href="static/chime.css?v={{ v }}">
-  <script type="module" src="static/chime.js?v={{ v }}"></script>
+  <link rel="stylesheet" href="{{ url_for('chime.static', filename='chime.css') }}?v={{ v }}">
+  <script type="module" src="{{ url_for('chime.static', filename='chime.js') }}?v={{ v }}"></script>
 </head>
 <body>
 <!-- 登録済みの日別計画表（日付・訓練内容・時間・時間割表のみ）とチャイム設定 -->
 <script type="application/json" id="planData">{{ plan_json|safe }}</script>
 <script type="application/json" id="chimeData">{{ chime_json|safe }}</script>
+<script type="application/json" id="mediaBase">{{ (url_for('chime.media', name='x')[:-1])|tojson }}</script>
 
 <div id="stage">
   <img id="picture" alt="" hidden>

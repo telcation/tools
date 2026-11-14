@@ -1,16 +1,27 @@
-# 訓練日誌 下書きツール（nisshi）
+# 授業用ツール（tools）
 
-事前に登録した日別計画表（認定様式第6号）から当日の訓練科目を自動で入れ、訓練日誌（実施様式1）の清書前の下書きを作るWebアプリです。
+職業訓練の授業で使う Web ツールをまとめたリポジトリです。1つの Flask アプリとして自宅サーバーで動かします。
 
-- 受講者用：`https://telcation.f5.si/nisshi/`
-- 講師用（日別計画表の登録・パスワード付き）：`https://telcation.f5.si/nisshi/admin`
-- チャイム表示（教室のPCで全画面表示）：`https://telcation.f5.si/nisshi/chime`
-- チャイムの設定（講師用・パスワード付き）：`https://telcation.f5.si/nisshi/admin-chime`
-- アプリのポート：`5012`（nginx から `127.0.0.1:5012` へ転送）
+| ツール | URL | フォルダ |
+|---|---|---|
+| トップページ | `https://telcation.f5.si/tools/` | `templates/index.html` |
+| 訓練日誌 下書きツール | `https://telcation.f5.si/tools/nisshi/` | `nisshi/` |
+| チャイム（教室のPCで全画面表示） | `https://telcation.f5.si/tools/chime/` | `chime/` |
+| 日別計画表の登録（講師用・パスワード付き） | `https://telcation.f5.si/tools/admin` | `app.py`・`templates/admin.html` |
+| チャイムの設定（講師用・パスワード付き） | `https://telcation.f5.si/tools/chime/admin` | `chime/` |
+
+- アプリのポート：`5012`（nginx から `127.0.0.1:5012` へ転送。サービス名 `tools`）
+- 日別計画表と講師用パスワードは、全ツールで共通です
+- 以前の URL（`/nisshi/`）は新しい URL へ自動で転送します
+
+## 訓練日誌 下書きツール（nisshi）
+
+事前に登録した日別計画表（認定様式第6号）から当日の訓練科目を自動で入れ、訓練日誌（実施様式1）の清書前の下書きを作ります。
+
 - 氏名・感想はブラウザの中だけで処理し、**サーバーには送信・保存しません**
 - 本紙は留意事項①のとおり受講者がボールペンで手書きします。このツールは転記用の下書きです
 
-## 個人情報を扱わない仕組み
+### 個人情報を扱わない仕組み
 
 | しくみ | 内容 |
 |---|---|
@@ -20,25 +31,26 @@
 | ログに残らない | サーバーのアクセスログには `GET /` や `GET /static/app.js` しか記録されない |
 | 講師名を登録しない | 日別計画表から登録するのは「日付・訓練内容・時間」だけ。担当講師名はブラウザ側で捨て、サーバー側でも受け付けない。PDF そのものも送信しない |
 
-## 日別計画表（認定様式第6号）の登録（講師用画面）
+## 日別計画表（認定様式第6号）の登録（講師用・全ツール共通）
 
-1. 受講者用画面の下にある「日別計画表の登録・更新（講師用）」、または `/nisshi/admin` を開く
+1. トップページの「日別計画表の登録・更新」、または `/tools/admin` を開く
 2. ユーザー名は何でもよく、パスワードに講師用パスワード（2-2 で設定）を入力
 3. 「日別計画表PDFを開く」で PDF を選ぶ。PDF はブラウザの中（pdf.js）で読み取るだけで送信しない
 4. 一覧と「合計 ○H」を確認し、「この内容で登録する」を押す
    - 合計が PDF の「時間合計」と同じなら正しく読めています
    - 日程変更で登録し直すと、前回との違い（変更・追加・削除）が色付きで表示されます
 
-| 登録する項目 | PDFのどこから | 受講者用画面での使われ方 |
+| 登録する項目 | PDFのどこから | 訓練日誌での使われ方 |
 |---|---|---|
 | 日付 | 「月/日」の行（年は2ページ目の実施期間「令和○年…」から） | 訓練日の選択肢 |
 | 訓練内容 | 「訓練内容」欄の名称 | 全時限の「訓練科目」（先頭の「（実技）」「（学科）」は既定で外す。画面のチェックで付けられる） |
 | 時間 | 「時間」の行 | 時限数（6H なら1〜6時限、2H なら1〜2時限）。0H の日（キャリアコンサルティング等）は訓練時間外として案内 |
+| 時間割表 | 2ページ目の「1限目 10:10〜11:00」… | （チャイムの時刻の初期値に使う） |
 
 - **担当講師名は登録しません。** 受講者用画面で「講師名」を入力すると、訓練のある時限へ反映されます
-- 登録データの置き場所：サーバーの `/home/appuser/apps/nisshi-data/plan.json`（1つ前の登録は `plan.prev.json`）
+- 登録データの置き場所：サーバーの `/home/appuser/apps/tools-data/plan.json`（1つ前の登録は `plan.prev.json`）
   - アプリのフォルダの外なので、自動デプロイ（`rsync --delete`）で消えません
-  - 登録を1つ前に戻す場合：`cp ~/apps/nisshi-data/plan.prev.json ~/apps/nisshi-data/plan.json`
+  - 登録を1つ前に戻す場合：`cp ~/apps/tools-data/plan.prev.json ~/apps/tools-data/plan.json`
 - 様式のレイアウトが変わって読めなくなった場合は `static/plan_parser.js` を調整します
 
 ## チャイム（chime の Web 版）
@@ -47,7 +59,7 @@
 
 ### 教室のPCでの使い方
 
-1. ブラウザ（Chrome / Edge）で `/nisshi/chime` を開く
+1. ブラウザ（Chrome / Edge）で `/tools/chime/` を開く
 2. 「チャイムを開始する」をクリック（**ブラウザの決まりで、最初に一度クリックしないと音を鳴らせません**）
 3. 右下の「全画面」で全画面表示。マウスを4秒動かさないと、ボタンとカーソルが消えます
 4. タブは表示したままにする（別のタブや最小化のままだと、省電力機能でチャイムが遅れることがあります）
@@ -57,7 +69,7 @@
 
 ### デスクトップ版との対応
 
-| デスクトップ版 | Web 版（講師用の `/nisshi/admin-chime` で編集） |
+| デスクトップ版 | Web 版（講師用の `/tools/chime/admin` で編集） |
 |---|---|
 | スケジュールファイル（HH:MM 画像 表示文字 色 大きさ フォント BGM） | 「チャイム時刻」。日別計画表の時間割表から自動で作成（各時限の開始・終了、昼休み、質疑応答、終了） |
 | 日程Excelの「テキスト」「ツール」 | 「科目ごと」に設定し、必要な日だけ「日ごとの上書き」 |
@@ -66,7 +78,7 @@
 | chime.wav ／ 準備中.png ／ 準備中.mp3 | 「素材」にアップロードして「基本設定」で選ぶ（チャイム音がないときは標準の電子音） |
 | （なし） | 日別計画表の訓練日だけ鳴らす（土日・祝日・0Hの日は鳴らさない） |
 
-- 保存場所：設定は `~/apps/nisshi-data/chime.json`（1つ前は `chime.prev.json`）、素材は `~/apps/nisshi-data/media/`
+- 保存場所：設定は `~/apps/tools-data/chime.json`（1つ前は `chime.prev.json`）、素材は `~/apps/tools-data/media/`
 - 素材とチャイム表示画面はパスワードなしで見られます。**個人情報を含む画像・文字は使わないでください**
 
 ## 名簿ファイルの書き方
@@ -84,29 +96,37 @@
 ## ファイル構成
 
 ```
-nisshi/
-├─ app.py                     Flask（画面の配信・日別計画表の登録）
-├─ chime_store.py             チャイム設定と素材の保存・検査
+tools/
+├─ app.py                  Flask 本体：トップページ・日別計画表の登録・セキュリティ設定
+├─ core.py                 共通処理：データの置き場所・日別計画表の検査と保存・講師用パスワード
 ├─ requirements.txt
-├─ templates/index.html       受講者用画面
-├─ templates/admin.html       講師用画面（日別計画表の登録）
-├─ templates/chime.html       チャイム表示画面
-├─ templates/admin_chime.html チャイムの設定（講師用）
-├─ static/style.css
-├─ static/app.js              処理の本体（ブラウザ側）
-├─ static/admin.js            講師用画面の処理
-├─ static/chime.js / chime.css      チャイム表示画面
-├─ static/admin_chime.js      チャイムの設定画面
-├─ static/chime_common.js     チャイムの共通処理（時間割表からの時刻作成など）
-├─ static/plan_parser.js      日別計画表PDFの読み取り
-├─ static/vendor/pdfjs/       pdf.js 4.10.38（Apache License 2.0）
-├─ sample_roster.txt           動作確認用のダミー名簿
+├─ templates/
+│   ├─ index.html          トップページ（ツールの一覧）
+│   └─ admin.html          日別計画表の登録（講師用）
+├─ static/                 共通の CSS・JS
+│   ├─ style.css
+│   ├─ admin.js            日別計画表の登録画面
+│   ├─ plan_parser.js      日別計画表PDFの読み取り（時間割表を含む）
+│   └─ vendor/pdfjs/       pdf.js 4.10.38（Apache License 2.0）
+├─ nisshi/                 訓練日誌 下書きツール（/tools/nisshi/）
+│   ├─ __init__.py
+│   ├─ templates/nisshi/index.html
+│   └─ static/app.js
+├─ chime/                  チャイム（/tools/chime/）
+│   ├─ __init__.py         画面と講師用の保存・アップロード
+│   ├─ store.py            チャイム設定と素材の保存・検査
+│   ├─ templates/chime/chime.html / admin.html
+│   └─ static/chime.js / chime.css / admin_chime.js / chime_common.js
+├─ sample_roster.txt       動作確認用のダミー名簿
 ├─ deploy/
-│   ├─ nisshi.service     systemd 設定
-│   ├─ nginx_nisshi.conf  nginx 追記内容
-│   └─ sudoers_nisshi     再起動許可の設定
+│   ├─ tools.service       systemd 設定
+│   ├─ nginx_tools.conf    nginx 追記内容（旧 /nisshi/ からの転送つき）
+│   └─ sudoers_tools       再起動許可の設定
 └─ .github/workflows/deploy.yml  自動デプロイ
 ```
+
+新しいツールを追加するときは、`chime/` と同じ形のフォルダ（Blueprint）を作り、`app.py` で `register_blueprint` します。
+テンプレートのリンクや読み込み先は、`/tools/` の下でも手元でも動くよう `url_for()` で書きます。
 
 ---
 
@@ -114,14 +134,14 @@ nisshi/
 
 Community 版・Professional 版のどちらでも動きます（Flask 専用の実行構成は使わず、通常の Python 実行構成にしてあるため）。
 
-1. zip を展開し、「ファイル」→「開く」で `nisshi` フォルダを選ぶ（「プロジェクトを信頼」を選択）
+1. 「ファイル」→「開く」で `tools` フォルダを選ぶ（「プロジェクトを信頼」を選択）
 2. 画面上部に「Python インタープリターが構成されていません」と出たら「インタープリターの構成」→「ローカルインタープリターを追加」→「Virtualenv 環境」→「新規」で、場所を `プロジェクトフォルダ/venv` にして作成
-   （通知が出ない場合は「ファイル」→「設定」→「プロジェクト: nisshi」→「Python インタープリター」から設定）
+   （通知が出ない場合は「ファイル」→「設定」→「プロジェクト: tools」→「Python インタープリター」から設定）
 3. 「requirements.txt の依存関係をインストール」の通知が出たら「インストール」（出ない場合はターミナルで `pip install -r requirements.txt`）
 4. 右上の実行構成で「app（http://127.0.0.1:5012/）」を選んで ▶ 実行
-5. 実行ログに表示される講師用画面 `http://127.0.0.1:5012/admin` を開き、日別計画表PDFを登録する
-   （手元では初回実行時に開発用パスワードが自動で作られます。中身は `PycharmProjects\nisshi-data\admin_password`）
-6. `http://127.0.0.1:5012/` を開き、日付を選んで `sample_roster.txt` を読み込んで確認
+5. `http://127.0.0.1:5012/admin` を開き、日別計画表PDFを登録する
+   （手元では初回実行時に開発用パスワードが自動で作られます。中身は `PycharmProjects\tools-data\admin_password`）
+6. `http://127.0.0.1:5012/` のトップページから、訓練日誌（`sample_roster.txt` を読み込んで確認）とチャイムを開く
 
 ### GitHub リポジトリにする
 
@@ -134,39 +154,41 @@ Community 版・Professional 版のどちらでも動きます（Flask 専用の
 
 ## 2. サーバーの初回設定（1回だけ）
 
+すでに nisshi として動かしている場合は、この章ではなく「**5. nisshi から tools への移行**」の手順を行ってください。
+
 `deploy/` フォルダのファイルは自動デプロイでは転送されません（サーバーの設定ファイルなので、手作業で1回だけ置きます）。
 
 ### 2-1. 手元のPCからファイルを送る（PyCharm のターミナル）
 
 ```powershell
-scp deploy\nisshi.service deploy\sudoers_nisshi deploy\nginx_nisshi.conf home:~/
+scp deploy\tools.service deploy\sudoers_tools deploy\nginx_tools.conf home:~/
 ```
 
 `home` は SSH 設定（`~\.ssh\config`）の Host 名です。設定が無い場合は次のように指定します。
 
 ```powershell
-scp -i $HOME\.ssh\id_rsa_appuser deploy\nisshi.service deploy\sudoers_nisshi deploy\nginx_nisshi.conf appuser@telcation.f5.si:~/
+scp -i $HOME\.ssh\id_rsa_appuser deploy\tools.service deploy\sudoers_tools deploy\nginx_tools.conf appuser@telcation.f5.si:~/
 ```
 
 ### 2-2. サーバーで設定する（`ssh home` で接続）
 
 ```bash
 # アプリ置き場と、登録データ・パスワードの置き場（デプロイで消えないよう別フォルダ）
-mkdir -p ~/apps/nisshi
-mkdir -p -m 700 ~/apps/nisshi-data
+mkdir -p ~/apps/tools
+mkdir -p -m 700 ~/apps/tools-data
 
 # 講師用画面のパスワード（自分で決めた文字列を1行で書いて保存）
-nano ~/apps/nisshi-data/admin_password
-chmod 600 ~/apps/nisshi-data/admin_password
+nano ~/apps/tools-data/admin_password
+chmod 600 ~/apps/tools-data/admin_password
 
 # systemd
-sudo cp ~/nisshi.service /etc/systemd/system/
+sudo cp ~/tools.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable nisshi
+sudo systemctl enable tools
 
 # 再起動の許可（GitHub Actions 用）。visudo -c で書式を確認してから置く
-sudo visudo -c -f ~/sudoers_nisshi \
-  && sudo install -m 440 -o root -g root ~/sudoers_nisshi /etc/sudoers.d/nisshi
+sudo visudo -c -f ~/sudoers_tools \
+  && sudo install -m 440 -o root -g root ~/sudoers_tools /etc/sudoers.d/tools
 
 # nginx：有効な設定ファイルは sites-enabled/telcation.conf（実ファイル）
 #        ※ sites-available/telcation.conf は使われていない古いファイルなので編集しない
@@ -177,8 +199,8 @@ sudo cp /etc/nginx/sites-enabled/telcation.conf ~/telcation.conf.bak
 grep -n "location /namepicker/" /etc/nginx/sites-enabled/telcation.conf
 
 # (3) その行番号を付けて開き、namepicker の location ブロック（閉じカッコ } まで）の
-#     すぐ下に ~/nginx_nisshi.conf の内容を貼り付ける（例：行番号が 120 なら +120）
-cat ~/nginx_nisshi.conf
+#     すぐ下に ~/nginx_tools.conf の内容を貼り付ける（例：行番号が 120 なら +120）
+cat ~/nginx_tools.conf
 sudo nano +<上で調べた行番号> /etc/nginx/sites-enabled/telcation.conf
 
 # (4) 書式チェックして反映（エラーなら (1) のバックアップで戻す）
@@ -186,7 +208,7 @@ sudo nginx -t && sudo systemctl reload nginx
 #   戻す場合：sudo cp ~/telcation.conf.bak /etc/nginx/sites-enabled/telcation.conf
 
 # 送ったファイルの片付け
-rm ~/nisshi.service ~/sudoers_nisshi ~/nginx_nisshi.conf ~/telcation.conf.bak
+rm ~/tools.service ~/sudoers_tools ~/nginx_tools.conf ~/telcation.conf.bak
 ```
 
 初回デプロイが成功するまでは `systemctl start` はエラーになります（venv がまだ無いため）。
@@ -257,7 +279,63 @@ GitHub のリポジトリ →「Settings」→「Secrets and variables」→「A
 
 1. 「Git」→「コミット」で変更をコミット
 2. 「Git」→「プッシュ」で `main` ブランチへプッシュ
-3. GitHub の「Actions」タブで「自宅サーバーへデプロイ（nisshi）」が緑になれば完了
+3. GitHub の「Actions」タブで「自宅サーバーへデプロイ（tools）」が緑になれば完了
+
+## 5. nisshi から tools への移行（1回だけ）
+
+以前の nisshi（`~/apps/nisshi`・サービス `nisshi`・URL `/nisshi/`）から切り替える手順です。
+日別計画表・講師用パスワード・チャイムの設定と素材は、データフォルダの名前を変えるだけでそのまま使えます。
+
+### 5-1. GitHub のリポジトリ名を変える
+
+GitHub の nisshi リポジトリ →「Settings」→「General」→「Repository name」を `tools` にして「Rename」。
+履歴と Secrets（`SSH_HOST` など5つ）はそのまま残ります。手元の Git も古い URL のまま動きますが、念のため PyCharm のターミナルで次を実行します。
+
+```powershell
+git remote set-url origin https://github.com/telcation/tools.git
+```
+
+### 5-2. 手元のPCからファイルを送る（PyCharm のターミナル）
+
+```powershell
+scp deploy\tools.service deploy\sudoers_tools deploy\nginx_tools.conf home:~/
+```
+
+### 5-3. サーバーで切り替える（`ssh home` で接続）
+
+```bash
+# (1) 古い nisshi を止めて、自動起動と再起動の許可を外す（同じ 5012 番を使うため先に止める）
+sudo systemctl disable --now nisshi
+sudo rm /etc/systemd/system/nisshi.service /etc/sudoers.d/nisshi
+
+# (2) データフォルダの名前を変える（日別計画表・パスワード・チャイム設定・素材）
+mv ~/apps/nisshi-data ~/apps/tools-data
+
+# (3) 新しいアプリ置き場と systemd・再起動の許可
+mkdir -p ~/apps/tools
+sudo cp ~/tools.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable tools
+sudo visudo -c -f ~/sudoers_tools \
+  && sudo install -m 440 -o root -g root ~/sudoers_tools /etc/sudoers.d/tools
+
+# (4) nginx：/nisshi/ の location ブロック（location = /nisshi と location /nisshi/）を削除し、
+#     同じ場所に ~/nginx_tools.conf の内容を貼り付ける
+sudo cp /etc/nginx/sites-enabled/telcation.conf ~/telcation.conf.bak
+grep -n "nisshi" /etc/nginx/sites-enabled/telcation.conf
+cat ~/nginx_tools.conf
+sudo nano +<上で表示された最初の行番号> /etc/nginx/sites-enabled/telcation.conf
+sudo nginx -t && sudo systemctl reload nginx
+#   戻す場合：sudo cp ~/telcation.conf.bak /etc/nginx/sites-enabled/telcation.conf
+
+# (5) 片付け（古いアプリ置き場は、tools の動作を確認してから消してもよい）
+rm ~/tools.service ~/sudoers_tools ~/nginx_tools.conf
+```
+
+### 5-4. プッシュしてデプロイ
+
+PyCharm でコミット・プッシュし、GitHub の「Actions」で「自宅サーバーへデプロイ（tools）」が緑になれば完了です。
+`https://telcation.f5.si/tools/` を開いて確認し、問題なければ `rm -rf ~/apps/nisshi ~/telcation.conf.bak` で古いアプリ置き場を消します。
 
 ## 注意点
 

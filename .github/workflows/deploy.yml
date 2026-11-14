@@ -1,4 +1,4 @@
-name: 自宅サーバーへデプロイ（nisshi）
+name: 自宅サーバーへデプロイ（tools）
 
 on:
   push:
@@ -6,11 +6,11 @@ on:
   workflow_dispatch:        # GitHub の画面から手動実行もできる
 
 concurrency:
-  group: deploy-nisshi
+  group: deploy-tools
   cancel-in-progress: false
 
 env:
-  APP_DIR: /home/appuser/apps/nisshi
+  APP_DIR: /home/appuser/apps/tools
 
 jobs:
   deploy:
@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Python の構文チェック
-        run: python -m py_compile app.py
+        run: python -m py_compile app.py core.py nisshi/__init__.py chime/__init__.py chime/store.py
 
       - name: SSH 鍵を準備
         run: |
@@ -48,9 +48,9 @@ jobs:
           [ -d venv ] || python3 -m venv venv
           venv/bin/pip install --quiet --upgrade pip
           venv/bin/pip install --quiet -r requirements.txt
-          sudo /usr/bin/systemctl restart nisshi
+          sudo /usr/bin/systemctl restart tools
           sleep 2
-          sudo /usr/bin/systemctl is-active nisshi
+          sudo /usr/bin/systemctl is-active tools
           curl -fsS http://127.0.0.1:5012/healthz && echo " ← 起動確認OK"
           REMOTE
 

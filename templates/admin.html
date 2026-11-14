@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap">
-  <link rel="stylesheet" href="static/style.css?v={{ v }}">
-  <script type="module" src="static/admin.js?v={{ v }}"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ v }}">
+  <script type="module" src="{{ url_for('static', filename='admin.js') }}?v={{ v }}"></script>
 </head>
 <body>
 <!-- 現在登録されている日別計画表（変更箇所の比較用） -->
@@ -17,7 +17,7 @@
 
 <header class="top">
   <h1>日別計画表の登録（講師用）</h1>
-  <p>日別計画表（認定様式第6号）のPDFを読み取り、受講者用画面の日程として登録します。日程が変更になったときは、新しいPDFで登録し直してください。</p>
+  <p>日別計画表（認定様式第6号）のPDFを読み取り、訓練日誌 下書きツールとチャイムで使う日程として登録します。日程が変更になったときは、新しいPDFで登録し直してください。</p>
 </header>
 <div class="privacy"><div>
   PDFはこのブラウザの中で読み取るだけで、PDFそのものは送信しません。<br>
@@ -53,19 +53,20 @@
     <p id="diffMsg"></p>
     <p class="hint" id="ttMsg"></p>
     <div class="scroll"><table class="mx plan" id="previewTable"></table></div>
-    <form method="post" action="admin" id="saveForm">
+    <form method="post" action="{{ url_for('admin') }}" id="saveForm">
       <input type="hidden" name="days" id="daysField">
       <input type="hidden" name="timetable" id="timetableField">
       <div class="row gap-y">
         <button type="submit" class="primary fixed" id="saveBtn">この内容で登録する</button>
-        <a class="adminLink" href="./">受講者用画面へ戻る</a>
+        <a class="adminLink" href="{{ url_for('index') }}">トップページへ戻る</a>
       </div>
     </form>
   </section>
 
-  <p class="row"><a class="adminLink" href="admin-chime">チャイム（chime）の設定へ</a>
-     <a class="adminLink" href="chime">チャイム表示画面を開く</a>
-     <a class="adminLink" href="./">受講者用画面へ戻る</a></p>
+  <p class="row"><a class="adminLink" href="{{ url_for('chime.admin') }}">チャイムの設定へ</a>
+     <a class="adminLink" href="{{ url_for('chime.index') }}">チャイム表示画面を開く</a>
+     <a class="adminLink" href="{{ url_for('nisshi.index') }}">訓練日誌 下書きツールへ</a>
+     <a class="adminLink" href="{{ url_for('index') }}">トップページへ戻る</a></p>
 </main>
 </body>
 </html>

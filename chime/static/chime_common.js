@@ -46,8 +46,12 @@ export function infoFor(cfg, day) {
   return { text: d.text || s.text || "", tool: d.tool || s.tool || "" };
 }
 
+// 素材のURL（ページに埋め込んだ置き場所 /tools/chime/media/ ＋ ファイル名）
+let MEDIA_BASE = null;
 export function mediaUrl(name) {
-  return name ? "media/" + encodeURIComponent(name) : "";
+  if (!name) return "";
+  if (MEDIA_BASE === null) MEDIA_BASE = readJson("mediaBase", "media/");
+  return MEDIA_BASE + encodeURIComponent(name);
 }
 
 export function readJson(id, fallback) {

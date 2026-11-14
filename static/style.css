@@ -144,3 +144,11 @@ table.plan audio{height:32px;max-width:220px}
   padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
 #dirtyMsg{color:var(--note);font-weight:700}
 nav.row a{flex:0 0 auto}
+/* ===== トップページ ===== */
+.toolGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:16px}
+.toolCard{display:flex;flex-direction:column;gap:6px;background:var(--surface);border:1px solid var(--line);
+  border-radius:8px;padding:18px 20px;color:var(--text);text-decoration:none}
+.toolCard:hover{border-color:var(--ink)}
+.toolCard:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.toolName{font-size:1.25rem;font-weight:700;color:var(--ink)}
+.toolDesc{color:var(--muted)}

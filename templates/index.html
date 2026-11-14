@@ -4,114 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
-  <title>訓練日誌 下書きツール</title>
+  <title>授業用ツール</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap">
-  <!-- 相対パスにしてあるので /nisshi/ のようなサブパス公開でも動きます -->
-  <link rel="stylesheet" href="static/style.css?v={{ v }}">
-  <script src="static/app.js?v={{ v }}" defer></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ v }}">
 </head>
 <body>
-<!-- サーバーに登録済みの日別計画表（日付・訓練内容・時間のみ。講師名は含まない） -->
-<script type="application/json" id="planData">{{ plan_json|safe }}</script>
 <header class="top">
-  <h1>訓練日誌 下書きツール</h1>
-  <p>日別計画表から当日の訓練科目を自動で入れ、清書前の下書きを作ります。</p>
+  <h1>授業用ツール</h1>
+  <p>{% if plan and plan.days %}日別計画表：{{ plan.days[0].iso }} 〜 {{ plan.days[-1].iso }}（{{ plan.updated }} 登録）{% else %}日別計画表はまだ登録されていません。{% endif %}</p>
 </header>
-<div class="privacy"><div>
-  入力した内容（氏名・感想など）と名簿は、この画面の中だけで扱います。どこにも送信・保存しません。ページを閉じたり再読み込みすると消えます。<br>
-  訓練日誌の本紙は受講者がボールペンで手書きします。この下書きを見ながら転記してください。
-</div></div>
-
-<main>
-<div class="inputs">
-
-  <section class="step">
-    <h2><span class="n">1</span>日付・講師・作成者</h2>
-    <label for="dateSel">訓練日（日別計画表より）</label>
-    <select id="dateSel"></select>
-    <div id="otherDateBox" hidden>
-      <label for="otherDate">日付を指定</label>
-      <input type="date" id="otherDate">
-    </div>
-    <div class="msg" id="dayMsg"></div>
-    <div class="row">
-      <div class="fixed">
-        <label for="startPeriod">開始時限</label>
-        <select id="startPeriod">
-          <option value="1">1時限目から</option><option value="2">2時限目から</option><option value="3">3時限目から</option>
-          <option value="4">4時限目から</option><option value="5">5時限目から</option><option value="6">6時限目から</option>
-        </select>
-      </div>
-      <p class="hint">入校式が3時限目から始まる日などに変更します（日付を変えると1時限目に戻ります）。</p>
-    </div>
-    <label class="chk"><input type="checkbox" id="withKind">訓練科目に「（実技）」「（学科）」を付ける</label>
-
-    <label for="teacher">講師名（全時限の初期値）</label>
-    <input type="text" id="teacher" placeholder="例：〇〇先生" autocomplete="off">
-    <label class="chk"><input type="checkbox" id="copyTeacher" checked>講師名を全時限にコピーする</label>
-    <p class="hint">チェックありのときは、この欄や各時限の講師名を書き換えると、訓練のある全時限に同じ名前が入ります。時限ごとに講師が違う日はチェックを外してください。講師名は個人名のためサーバーには登録していません。</p>
-
-    <label for="author">作成者（当番の受講者名）</label>
-    <input type="text" id="author" autocomplete="off">
-    <details>
-      <summary>訓練番号・訓練科名（※欄・通常は変更不要）</summary>
-      <label for="kno">訓練番号</label><input type="text" id="kno" value="5-08-27-002-02-">
-      <label for="kname">訓練科名</label><input type="text" id="kname" value="未経験からのJava・Pythonプログラミング実践科">
-    </details>
-  </section>
-
-  <section class="step">
-    <h2><span class="n">2</span>時限ごとの訓練内容</h2>
-    <p class="hint">訓練内容欄には「テキストのタイトル・ページ数」を書きます。小テストをした時限はチェックを入れてください。</p>
-    <div class="row gap-y">
-      <button type="button" id="copyDown">最初の時限の内容を全時限にコピー</button>
-    </div>
-    <div id="periods"></div>
-  </section>
-
-  <section class="step">
-    <h2><span class="n">3</span>欠席・遅刻・早退・欠課</h2>
-    <div class="row">
-      <div>
-        <label for="rosterOpen">名簿ファイル（.txt / .csv・1行1名）</label>
-        <button type="button" id="rosterOpen" class="primary">名簿ファイルを開く</button>
-        <input type="file" id="rosterFile" accept=".txt,.csv,text/plain,text/csv" hidden>
-      </div>
-    </div>
-    <details>
-      <summary>名簿を手で入力する</summary>
-      <label for="rosterText">氏名を1行に1人ずつ</label>
-      <textarea id="rosterText" class="short"></textarea>
-      <button type="button" id="rosterApply" class="mt">この名簿を使う</button>
-    </details>
-    <p class="hint">該当者のいる時限だけ選べば十分です。だれも選ばなければ日誌には「なし」と入ります。</p>
-    <label class="chk"><input type="checkbox" id="fullDayEach" checked>1日欠席者を各時限の欄にも「（欠席）」として書く</label>
-    <div class="scroll mt"><table class="mx" id="matrix"></table></div>
-    <div class="msg" id="rosterMsg">名簿を読み込むと、ここに出欠表が出ます。</div>
-  </section>
-
-  <section class="step">
-    <h2><span class="n">4</span>受講者の感想及び質問</h2>
-    <textarea id="kanso" placeholder="今日の訓練で分かったこと、難しかったこと、質問したいことなど"></textarea>
-    <div class="counter"><span id="kcount">0</span> 文字</div>
-    <p class="hint">書き方の例：「今日は○○を学んだ」「△△の部分が難しかった」「□□はどういうときに使うのか知りたい」</p>
-  </section>
-
-  <div class="row">
-    <button type="button" class="danger fixed" id="clearAll">入力をすべて消す</button>
-    <a class="adminLink" href="admin">日別計画表の登録・更新（講師用）</a>
+<main class="single">
+  <div class="toolGrid">
+    <a class="toolCard" href="{{ url_for('nisshi.index') }}">
+      <span class="toolName">訓練日誌 下書きツール</span>
+      <span class="toolDesc">当日の訓練科目を自動で入れて、訓練日誌（実施様式1）の下書きを作ります。氏名・感想はどこにも送信しません。</span>
+    </a>
+    <a class="toolCard" href="{{ url_for('chime.index') }}">
+      <span class="toolName">チャイム</span>
+      <span class="toolDesc">教室のPCで全画面表示する時計とチャイムです。準備中画面にその日のテキスト・ツールを表示します。</span>
+    </a>
   </div>
-</div>
-
-<div class="previewWrap">
-  <div class="previewBar">
-    <button type="button" class="primary" id="printBtn">下書きを印刷する</button>
-  </div>
-  <div class="paperScroll"><div class="paper" id="paper"></div></div>
-</div>
+  <section class="step">
+    <h2>講師用（パスワードが必要です）</h2>
+    <p class="row">
+      <a class="adminLink" href="{{ url_for('admin') }}">日別計画表の登録・更新</a>
+      <a class="adminLink" href="{{ url_for('chime.admin') }}">チャイムの設定</a>
+    </p>
+  </section>
 </main>
-
 </body>
 </html>

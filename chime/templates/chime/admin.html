@@ -8,13 +8,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap">
-  <link rel="stylesheet" href="static/style.css?v={{ v }}">
-  <script type="module" src="static/admin_chime.js?v={{ v }}"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v={{ v }}">
+  <script type="module" src="{{ url_for('chime.static', filename='admin_chime.js') }}?v={{ v }}"></script>
 </head>
 <body>
 <script type="application/json" id="planData">{{ plan_json|safe }}</script>
 <script type="application/json" id="chimeData">{{ chime_json|safe }}</script>
 <script type="application/json" id="mediaData">{{ media_json|safe }}</script>
+<!-- 素材の置き場所（URL） -->
+<script type="application/json" id="mediaBase">{{ (url_for('chime.media', name='x')[:-1])|tojson }}</script>
 
 <header class="top">
   <h1>チャイムの設定（講師用）</h1>
@@ -24,9 +26,9 @@
 <main class="single">
   {% if message %}<div class="msg notice" role="status">{{ message }}</div>{% endif %}
   <nav class="row gap-y">
-    <a class="adminLink" href="chime" target="_blank" rel="noopener">チャイム表示画面を開く（別タブ）</a>
-    <a class="adminLink" href="admin">日別計画表の登録へ</a>
-    <a class="adminLink" href="./">受講者用画面へ</a>
+    <a class="adminLink" href="{{ url_for('chime.index') }}" target="_blank" rel="noopener">チャイム表示画面を開く（別タブ）</a>
+    <a class="adminLink" href="{{ url_for('admin') }}">日別計画表の登録へ</a>
+    <a class="adminLink" href="{{ url_for('index') }}">トップページへ</a>
   </nav>
 
   <section class="step">
@@ -34,7 +36,7 @@
     <p class="hint">アップロードした素材は下の設定で選べます。同じ名前のファイルをアップロードすると差し替えになります。
       画像：png / jpg / gif / webp、音声：mp3 / wav / ogg / m4a（1ファイル30MBまで）。<br>
       <strong>アップロード・削除をするとページが読み込み直されます。設定を変更中のときは、先に「設定を保存する」を押してください。</strong></p>
-    <form method="post" action="admin-chime-upload" enctype="multipart/form-data" class="row gap-y" id="uploadForm">
+    <form method="post" action="{{ url_for('chime.admin_upload') }}" enctype="multipart/form-data" class="row gap-y" id="uploadForm">
       <input type="file" name="files" multiple accept=".png,.jpg,.jpeg,.gif,.webp,.mp3,.wav,.ogg,.m4a">
       <button type="submit" class="primary fixed">アップロード</button>
     </form>
@@ -45,10 +47,10 @@
       {% for m in media %}
         <tr>
           <td class="left">{{ m.name }}</td>
-          <td>{% if m.kind == 'image' %}<img class="thumb" src="media/{{ m.name|urlencode }}" alt="">{% else %}<audio controls preload="none" src="media/{{ m.name|urlencode }}"></audio>{% endif %}</td>
+          <td>{% if m.kind == 'image' %}<img class="thumb" src="{{ url_for('chime.media', name=m.name) }}" alt="">{% else %}<audio controls preload="none" src="{{ url_for('chime.media', name=m.name) }}"></audio>{% endif %}</td>
           <td>{{ (m.size / 1024)|round(0)|int }} KB</td>
           <td class="left">{{ usage.get(m.name, '') }}</td>
-          <td><form method="post" action="admin-chime-delete" class="delForm">
+          <td><form method="post" action="{{ url_for('chime.admin_delete') }}" class="delForm">
                 <input type="hidden" name="name" value="{{ m.name }}">
                 <button type="submit" class="danger">削除</button></form></td>
         </tr>
@@ -59,7 +61,7 @@
     {% endif %}
   </section>
 
-  <form method="post" action="admin-chime" id="saveForm">
+  <form method="post" action="{{ url_for('chime.admin') }}" id="saveForm">
   <input type="hidden" name="chime" id="chimeField">
 
   <section class="step">
