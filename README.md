@@ -4,6 +4,8 @@
 
 - 受講者用：`https://telcation.f5.si/nisshi/`
 - 講師用（日別計画表の登録・パスワード付き）：`https://telcation.f5.si/nisshi/admin`
+- チャイム表示（教室のPCで全画面表示）：`https://telcation.f5.si/nisshi/chime`
+- チャイムの設定（講師用・パスワード付き）：`https://telcation.f5.si/nisshi/admin-chime`
 - アプリのポート：`5012`（nginx から `127.0.0.1:5012` へ転送）
 - 氏名・感想はブラウザの中だけで処理し、**サーバーには送信・保存しません**
 - 本紙は留意事項①のとおり受講者がボールペンで手書きします。このツールは転記用の下書きです
@@ -39,6 +41,34 @@
   - 登録を1つ前に戻す場合：`cp ~/apps/nisshi-data/plan.prev.json ~/apps/nisshi-data/plan.json`
 - 様式のレイアウトが変わって読めなくなった場合は `static/plan_parser.js` を調整します
 
+## チャイム（chime の Web 版）
+
+デスクトップ版 [chime](https://github.com/telcation/chime)（`chimeApp.py`）を、登録済みの日別計画表と組み合わせて Web で動かすものです。
+
+### 教室のPCでの使い方
+
+1. ブラウザ（Chrome / Edge）で `/nisshi/chime` を開く
+2. 「チャイムを開始する」をクリック（**ブラウザの決まりで、最初に一度クリックしないと音を鳴らせません**）
+3. 右下の「全画面」で全画面表示。マウスを4秒動かさないと、ボタンとカーソルが消えます
+4. タブは表示したままにする（別のタブや最小化のままだと、省電力機能でチャイムが遅れることがあります）
+
+- 日付が変わると自動で読み込み直し、その日の日程・最新の設定になります。設定を変更した当日は、ページを読み込み直すと反映されます
+- 右下の「手動切替」で、手動切替の項目・準備中画面・スケジュールの各表示に切り替えられます。次のチャイムの時刻で自動的にスケジュールに戻ります
+
+### デスクトップ版との対応
+
+| デスクトップ版 | Web 版（講師用の `/nisshi/admin-chime` で編集） |
+|---|---|
+| スケジュールファイル（HH:MM 画像 表示文字 色 大きさ フォント BGM） | 「チャイム時刻」。日別計画表の時間割表から自動で作成（各時限の開始・終了、昼休み、質疑応答、終了） |
+| 日程Excelの「テキスト」「ツール」 | 「科目ごと」に設定し、必要な日だけ「日ごとの上書き」 |
+| 表示設定.txt | 「手動切替の項目」 |
+| config.txt（背景色・画像の大きさ・準備中画面の文字） | 「基本設定」 |
+| chime.wav ／ 準備中.png ／ 準備中.mp3 | 「素材」にアップロードして「基本設定」で選ぶ（チャイム音がないときは標準の電子音） |
+| （なし） | 日別計画表の訓練日だけ鳴らす（土日・祝日・0Hの日は鳴らさない） |
+
+- 保存場所：設定は `~/apps/nisshi-data/chime.json`（1つ前は `chime.prev.json`）、素材は `~/apps/nisshi-data/media/`
+- 素材とチャイム表示画面はパスワードなしで見られます。**個人情報を含む画像・文字は使わないでください**
+
 ## 名簿ファイルの書き方
 
 ```
@@ -56,12 +86,18 @@
 ```
 nisshi/
 ├─ app.py                     Flask（画面の配信・日別計画表の登録）
+├─ chime_store.py             チャイム設定と素材の保存・検査
 ├─ requirements.txt
 ├─ templates/index.html       受講者用画面
 ├─ templates/admin.html       講師用画面（日別計画表の登録）
+├─ templates/chime.html       チャイム表示画面
+├─ templates/admin_chime.html チャイムの設定（講師用）
 ├─ static/style.css
 ├─ static/app.js              処理の本体（ブラウザ側）
 ├─ static/admin.js            講師用画面の処理
+├─ static/chime.js / chime.css      チャイム表示画面
+├─ static/admin_chime.js      チャイムの設定画面
+├─ static/chime_common.js     チャイムの共通処理（時間割表からの時刻作成など）
 ├─ static/plan_parser.js      日別計画表PDFの読み取り
 ├─ static/vendor/pdfjs/       pdf.js 4.10.38（Apache License 2.0）
 ├─ sample_roster.txt           動作確認用のダミー名簿

@@ -128,3 +128,19 @@ table.plan tr.changed td{background:var(--note-bg)}
 table.plan tr.offday td{color:var(--muted)}
 table.plan .was{font-size:.85em;color:var(--muted)}
 .row > .fixed{flex:0 0 auto}
+/* ===== チャイム設定（講師用） ===== */
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 16px}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px 12px}
+@media (max-width:760px){.grid2,.grid4{grid-template-columns:minmax(0,1fr)}}
+section.step h3{font-size:1rem;margin:14px 0 2px}
+input[type=color]{height:40px;padding:2px 4px;min-width:56px}
+table.plan input[type=text]{min-width:10em}
+table.plan input.num{width:5em}
+table.plan select{min-width:8em}
+img.thumb{max-height:48px;max-width:96px;display:block;margin:auto}
+table.plan audio{height:32px;max-width:220px}
+.saveBar{position:sticky;bottom:0;background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  padding:10px 16px;display:flex;justify-content:flex-end;align-items:center;gap:16px;margin-top:8px;
+  padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+#dirtyMsg{color:var(--note);font-weight:700}
+nav.row a{flex:0 0 auto}

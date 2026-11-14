@@ -1,0 +1,42 @@
+/* チャイム表示画面（プロジェクタ投影用：背景色は講師用の設定で変更） */
+:root{color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#fff;
+  font-family:"BIZ UDPGothic","Meiryo","Yu Gothic UI",sans-serif}
+#stage{position:fixed;inset:0;background:#000;overflow:hidden}
+#stage.hideUi{cursor:none}
+#picture{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:none}
+#center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  padding:.1em .4em;background:rgba(0,0,0,.5);font-weight:700;white-space:pre-wrap;text-align:center;
+  max-width:96vw;line-height:1.25}
+.slot{position:absolute;left:50%;transform:translate(-50%,-50%);padding:.12em .5em;font-weight:700;
+  white-space:nowrap;max-width:98vw;overflow:hidden;text-overflow:ellipsis}
+#clock{position:absolute;top:10px;left:50%;transform:translateX(-50%);text-align:center;z-index:5;
+  text-shadow:0 0 6px rgba(0,0,0,.6)}
+#date{font-size:max(20px,2.6vh)}
+#time{font-size:max(36px,6.5vh);font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
+#next{font-size:max(18px,2.4vh);font-weight:700}
+#status{position:absolute;left:12px;bottom:10px;font-size:15px;opacity:.8;z-index:5;max-width:60vw}
+#controls{position:absolute;right:12px;bottom:10px;display:flex;gap:8px;z-index:5;transition:opacity .3s}
+#stage.hideUi #controls,#stage.hideUi #status{opacity:0}
+#controls button,#manual button,#btnStart{font:inherit;font-size:16px;padding:8px 14px;border:0;border-radius:6px;
+  background:#333;color:#fff;cursor:pointer}
+#controls button:focus-visible,#manual button:focus-visible,#btnStart:focus-visible{outline:3px solid #8fb0ff;outline-offset:2px}
+
+#startOverlay{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgba(0,0,0,.72);cursor:pointer}
+#startOverlay[hidden]{display:none}
+.startBox{background:#1d2128;border-radius:10px;padding:28px 32px;max-width:min(720px,92vw);text-align:center;line-height:1.7}
+.startBox .big{font-size:26px;font-weight:700;margin:0 0 8px}
+#btnStart{background:#1c3f94;font-size:20px;padding:12px 24px;margin-top:10px}
+
+#manual{border:0;border-radius:10px;background:#1d2128;color:#fff;width:min(640px,92vw);max-height:86vh;padding:20px 24px}
+#manual::backdrop{background:rgba(0,0,0,.6)}
+#manual h2{margin:0 0 4px}
+#manual .hint{margin:0 0 12px;color:#aab2bf}
+#manual h3{font-size:15px;color:#aab2bf;margin:14px 0 6px;border-bottom:1px solid #3a414c}
+#manualList{max-height:56vh;overflow:auto}
+#manualList button{display:block;width:100%;text-align:left;margin:4px 0;background:#2a2f38}
+#manualList button:hover{background:#3a414c}
+.dlgBtns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+#btnBack{background:#1c3f94}
+@media (prefers-reduced-motion:reduce){#controls{transition:none}}

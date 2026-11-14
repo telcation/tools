@@ -9,7 +9,10 @@
       ページからの通信そのものを禁止しています）
 ・講師用の画面（/admin、パスワード付き）：
     日別計画表PDFをブラウザの中（pdf.js）で読み取り、講師名を取り除いた
-    「日付・訓練内容・時間」だけをサーバーに登録します。PDF そのものは送信しません。
+    「日付・訓練内容・時間」と時間割表だけをサーバーに登録します。PDF そのものは送信しません。
+・チャイム表示画面（/chime）：
+    教室のPCで全画面表示するチャイム（デスクトップ版 chimeApp.py の Web 版）。
+    登録済みの日程と、講師用のチャイム設定（/admin-chime）をページに埋め込んで配ります。
 """
 import hmac
 import json
@@ -22,14 +25,16 @@ from datetime import date, datetime
 from pathlib import Path
 from urllib.parse import quote
 
-from flask import Flask, Response, abort, redirect, render_template, request
+from flask import Flask, Response, abort, redirect, render_template, request, send_from_directory
+
+from chime_store import Store
 
 # pdf.js（static/vendor/pdfjs/*.mjs）を JavaScript として配るための設定。
 # 古い Python では .mjs の種類が登録されておらず、ブラウザが読み込みを拒否するため
 mimetypes.add_type("text/javascript", ".mjs")
 
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024  # 登録データは 1MB まで
+app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024  # 素材のアップロードを考えて 32MB まで
 
 BASE_DIR = Path(__file__).resolve().parent
 # 登録した日別計画表とパスワードの置き場所。
@@ -39,6 +44,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = Path(os.environ.get("NISSHI_DATA_DIR", BASE_DIR.parent / "nisshi-data"))
 PLAN_FILE = DATA_DIR / "plan.json"
 PASSWORD_FILE = DATA_DIR / "admin_password"
+CHIME = Store(DATA_DIR)
 
 # CSS / JS 更新時にブラウザのキャッシュを確実に切り替えるための番号
 ASSET_VERSION = str(int(time.time()))
@@ -108,11 +114,32 @@ def clean_days(raw):
     return days
 
 
-def save_plan(days):
+TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+
+
+def clean_timetable(raw):
+    """時間割表（1限目 10:10〜11:00 など）を検査する"""
+    if not isinstance(raw, list) or len(raw) > 12:
+        return []
+    out = []
+    for r in raw:
+        if not isinstance(r, dict):
+            continue
+        label, start, end = str(r.get("label", ""))[:10], str(r.get("start", "")), str(r.get("end", ""))
+        period = r.get("period", 0)
+        if label and TIME_RE.match(start) and TIME_RE.match(end) and start < end and isinstance(period, int) and 0 <= period <= 9:
+            out.append({"label": label, "period": period, "start": start, "end": end})
+    return sorted(out, key=lambda x: x["start"])
+
+
+def save_plan(days, timetable):
     DATA_DIR.mkdir(parents=True, exist_ok=True)
+    old = load_plan() or {}
     if PLAN_FILE.exists():  # 1つ前の登録を残しておく（登録ミスの戻し用）
         PLAN_FILE.replace(DATA_DIR / "plan.prev.json")
-    data = {"updated": datetime.now().strftime("%Y-%m-%d %H:%M"), "days": days}
+    # 時間割表が読み取れなかったときは、前回の時間割表をそのまま使う
+    data = {"updated": datetime.now().strftime("%Y-%m-%d %H:%M"), "days": days,
+            "timetable": timetable or old.get("timetable", [])}
     tmp = DATA_DIR / "plan.json.tmp"
     tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
     tmp.replace(PLAN_FILE)
@@ -121,7 +148,11 @@ def save_plan(days):
 
 def plan_json_for_page(plan):
     """<script type="application/json"> に埋め込むための JSON（</script> 対策で < をエスケープ）"""
-    return json.dumps(plan or {"updated": None, "days": []}, ensure_ascii=False).replace("<", "\\u003c")
+    return to_page_json(plan or {"updated": None, "days": [], "timetable": []})
+
+
+def to_page_json(obj):
+    return json.dumps(obj, ensure_ascii=False).replace("<", "\\u003c")
 
 
 # ---------------- 講師用画面の認証 ----------------
@@ -176,15 +207,97 @@ def admin_save():
         abort(403)
     try:
         days = clean_days(json.loads(request.form.get("days", "")))
+        try:
+            timetable = clean_timetable(json.loads(request.form.get("timetable", "[]") or "[]"))
+        except ValueError:
+            timetable = []
     except (ValueError, TypeError) as e:
         return render_template("admin.html", v=ASSET_VERSION, plan=load_plan(),
                                plan_json=plan_json_for_page(load_plan()),
                                message=f"登録できませんでした：{e}"), 400
-    data = save_plan(days)
+    data = save_plan(days, timetable)
     total = sum(d["hours"] for d in days)
     msg = f"{data['updated']} に登録しました（{days[0]['iso']}〜{days[-1]['iso']}、合計 {total}H）"
     # 再読み込みで二重登録しないよう、登録後は GET に切り替える
     return redirect("admin?msg=" + quote(msg), code=303)
+
+
+# ---------------- チャイム（chime） ----------------
+@app.route("/chime")
+def chime():
+    """教室のPCで全画面表示するチャイム画面（パスワードなし。個人情報は含まない）"""
+    return render_template("chime.html", v=ASSET_VERSION,
+                           plan_json=plan_json_for_page(load_plan()),
+                           chime_json=to_page_json(CHIME.load()))
+
+
+@app.route("/media/<path:name>")
+def media(name):
+    """アップロードした素材（チャイム音・画像・BGM）"""
+    return send_from_directory(CHIME.media_dir, Store.safe_name(name), max_age=3600)
+
+
+def render_chime_admin(message="", status=200):
+    return render_template("admin_chime.html", v=ASSET_VERSION, message=message,
+                           plan_json=plan_json_for_page(load_plan()),
+                           chime_json=to_page_json(CHIME.load()),
+                           media_json=to_page_json(CHIME.list_media()),
+                           media=CHIME.list_media(), usage=CHIME.usage()), status
+
+
+@app.route("/admin-chime", methods=["GET"])
+def admin_chime():
+    require_admin()
+    return render_chime_admin(request.args.get("msg", ""))
+
+
+@app.route("/admin-chime", methods=["POST"])
+def admin_chime_save():
+    require_admin()
+    if not same_origin_post():
+        abort(403)
+    try:
+        data = CHIME.save(json.loads(request.form.get("chime", "")))
+    except (ValueError, TypeError, AttributeError) as e:
+        return render_chime_admin(f"保存できませんでした：{e}", 400)
+    return redirect("admin-chime?msg=" + quote(f"{data['updated']} に保存しました"), code=303)
+
+
+@app.route("/admin-chime-upload", methods=["POST"])
+def admin_chime_upload():
+    require_admin()
+    if not same_origin_post():
+        abort(403)
+    names, errors = [], []
+    for f in request.files.getlist("files"):
+        if not f or not f.filename:
+            continue
+        try:
+            names.append(CHIME.add_media(f))
+        except ValueError as e:
+            errors.append(str(e))
+    msg = ("アップロードしました：" + "、".join(names) if names else "") + ("　" if names and errors else "") + "　".join(errors)
+    return redirect("admin-chime?msg=" + quote(msg or "ファイルが選ばれていません"), code=303)
+
+
+@app.route("/admin-chime-delete", methods=["POST"])
+def admin_chime_delete():
+    require_admin()
+    if not same_origin_post():
+        abort(403)
+    name = request.form.get("name", "")
+    try:
+        CHIME.delete_media(name)
+        msg = f"削除しました：{name}"
+    except ValueError as e:
+        msg = str(e)
+    return redirect("admin-chime?msg=" + quote(msg), code=303)
+
+
+@app.errorhandler(413)
+def too_large(_e):
+    return Response("ファイルが大きすぎます（1回のアップロードは32MBまで）。ブラウザの「戻る」で戻ってください。",
+                    413, mimetype="text/plain")
 
 
 @app.route("/healthz")

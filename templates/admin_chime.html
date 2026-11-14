@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>チャイムの設定（講師用）</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap">
+  <link rel="stylesheet" href="static/style.css?v={{ v }}">
+  <script type="module" src="static/admin_chime.js?v={{ v }}"></script>
+</head>
+<body>
+<script type="application/json" id="planData">{{ plan_json|safe }}</script>
+<script type="application/json" id="chimeData">{{ chime_json|safe }}</script>
+<script type="application/json" id="mediaData">{{ media_json|safe }}</script>
+
+<header class="top">
+  <h1>チャイムの設定（講師用）</h1>
+  <p>チャイム表示画面の時刻・表示・音と、準備中画面に出す「テキスト」「ツール」を設定します。</p>
+</header>
+
+<main class="single">
+  {% if message %}<div class="msg notice" role="status">{{ message }}</div>{% endif %}
+  <nav class="row gap-y">
+    <a class="adminLink" href="chime" target="_blank" rel="noopener">チャイム表示画面を開く（別タブ）</a>
+    <a class="adminLink" href="admin">日別計画表の登録へ</a>
+    <a class="adminLink" href="./">受講者用画面へ</a>
+  </nav>
+
+  <section class="step">
+    <h2><span class="n">1</span>素材（チャイム音・画像・BGM）</h2>
+    <p class="hint">アップロードした素材は下の設定で選べます。同じ名前のファイルをアップロードすると差し替えになります。
+      画像：png / jpg / gif / webp、音声：mp3 / wav / ogg / m4a（1ファイル30MBまで）。<br>
+      <strong>アップロード・削除をするとページが読み込み直されます。設定を変更中のときは、先に「設定を保存する」を押してください。</strong></p>
+    <form method="post" action="admin-chime-upload" enctype="multipart/form-data" class="row gap-y" id="uploadForm">
+      <input type="file" name="files" multiple accept=".png,.jpg,.jpeg,.gif,.webp,.mp3,.wav,.ogg,.m4a">
+      <button type="submit" class="primary fixed">アップロード</button>
+    </form>
+    {% if media %}
+    <div class="scroll"><table class="mx plan">
+      <thead><tr><th>ファイル名</th><th>確認</th><th>大きさ</th><th>使っている場所</th><th></th></tr></thead>
+      <tbody>
+      {% for m in media %}
+        <tr>
+          <td class="left">{{ m.name }}</td>
+          <td>{% if m.kind == 'image' %}<img class="thumb" src="media/{{ m.name|urlencode }}" alt="">{% else %}<audio controls preload="none" src="media/{{ m.name|urlencode }}"></audio>{% endif %}</td>
+          <td>{{ (m.size / 1024)|round(0)|int }} KB</td>
+          <td class="left">{{ usage.get(m.name, '') }}</td>
+          <td><form method="post" action="admin-chime-delete" class="delForm">
+                <input type="hidden" name="name" value="{{ m.name }}">
+                <button type="submit" class="danger">削除</button></form></td>
+        </tr>
+      {% endfor %}
+      </tbody></table></div>
+    {% else %}
+      <p class="hint">まだ素材はありません。チャイム音がないときは標準の電子音（キンコン）が鳴ります。</p>
+    {% endif %}
+  </section>
+
+  <form method="post" action="admin-chime" id="saveForm">
+  <input type="hidden" name="chime" id="chimeField">
+
+  <section class="step">
+    <h2><span class="n">2</span>基本設定</h2>
+    <div class="grid2">
+      <div><label for="chimeSound">チャイム音</label><select id="chimeSound" data-media="audio" data-none="（標準の電子音）"></select></div>
+      <div><label for="bgcolor">背景色</label><input type="color" id="bgcolor"></div>
+      <div><label for="standbyImage">準備中画面の画像</label><select id="standbyImage" data-media="image" data-none="（なし）"></select></div>
+      <div><label for="standbyBgm">準備中画面のBGM</label><select id="standbyBgm" data-media="audio" data-none="（なし）"></select></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="trainingOnly">日別計画表の訓練日だけチャイムを鳴らす（土日・祝日・0Hの日は鳴らさない）</label>
+    <p class="hint" id="planNote"></p>
+
+    <details>
+      <summary>画像と文字の表示（デスクトップ版の「設定」と同じ項目）</summary>
+      <div class="grid2">
+        <div><label for="font">フォント</label><input type="text" id="font" placeholder="BIZ UDPGothic"></div>
+        <div><label for="imgW">画像の横幅（px・空欄＝画面に合わせる）</label><input type="number" id="imgW" min="1"></div>
+        <div><label class="chk"><input type="checkbox" id="imgRatio">画像の縦横比を固定</label></div>
+        <div><label for="imgH">画像の高さ（px・空欄＝画面に合わせる）</label><input type="number" id="imgH" min="1"></div>
+      </div>
+      <h3>準備中画面の「テキスト」「ツール」</h3>
+      <div class="grid4">
+        <div><label for="textSize">テキストの大きさ（px）</label><input type="number" id="textSize" min="8" max="300"></div>
+        <div><label for="textColor">文字色</label><input type="color" id="textColor"></div>
+        <div><label for="textBg">背景色</label><input type="color" id="textBg"></div>
+        <div><label for="textY">位置（上端からpx）</label><input type="number" id="textY" min="0"></div>
+        <div><label for="toolSize">ツールの大きさ（px）</label><input type="number" id="toolSize" min="8" max="300"></div>
+        <div><label for="toolColor">文字色</label><input type="color" id="toolColor"></div>
+        <div><label for="toolBg">背景色</label><input type="color" id="toolBg"></div>
+        <div><label for="toolY">位置（下端からpx）</label><input type="number" id="toolY" min="0"></div>
+      </div>
+    </details>
+  </section>
+
+  <section class="step">
+    <h2><span class="n">3</span>チャイム時刻</h2>
+    <p class="hint">時刻になるとチャイムが鳴り、表示文字・画像・BGMに切り替わります。最初の時刻より前は「準備中画面」です。
+      BGMは次の時刻の2秒前からフェードアウトします。</p>
+    <p class="hint" id="ttNote"></p>
+    <div class="row gap-y">
+      <button type="button" id="addRow" class="fixed">行を追加</button>
+      <button type="button" id="fromTimetable" class="fixed">時間割表から作り直す</button>
+    </div>
+    <div class="scroll"><table class="mx plan" id="schedTable"></table></div>
+  </section>
+
+  <section class="step">
+    <h2><span class="n">4</span>準備中画面の「テキスト」「ツール」（科目ごと）</h2>
+    <p class="hint">日別計画表の訓練内容から番号（①②…）と「（実技）」「（学科）」を外した単位でまとめています。ここに入れた内容が、その科目の全日に表示されます。</p>
+    <div class="scroll"><table class="mx plan" id="subjTable"></table></div>
+  </section>
+
+  <section class="step">
+    <h2><span class="n">5</span>日ごとの上書き</h2>
+    <p class="hint">特定の日だけ変えたいときに入力します。空欄の日は、科目ごとの設定（薄い文字）が表示されます。</p>
+    <label class="chk"><input type="checkbox" id="showPast">過ぎた日も表示する</label>
+    <div class="scroll"><table class="mx plan" id="dayTable"></table></div>
+  </section>
+
+  <section class="step">
+    <h2><span class="n">6</span>手動切替の項目（デスクトップ版の「表示設定.txt」）</h2>
+    <p class="hint">チャイム表示画面の「手動切替」から選んで表示できる項目です（例：小テスト中、休講、避難訓練）。</p>
+    <div class="row gap-y"><button type="button" id="addDisp" class="fixed">行を追加</button></div>
+    <div class="scroll"><table class="mx plan" id="dispTable"></table></div>
+  </section>
+
+  <div class="saveBar">
+    <span id="dirtyMsg"></span>
+    <button type="submit" class="primary fixed" id="saveBtn">設定を保存する</button>
+  </div>
+  </form>
+</main>
+</body>
+</html>

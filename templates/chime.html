@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>チャイム</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap">
+  <link rel="stylesheet" href="static/chime.css?v={{ v }}">
+  <script type="module" src="static/chime.js?v={{ v }}"></script>
+</head>
+<body>
+<!-- 登録済みの日別計画表（日付・訓練内容・時間・時間割表のみ）とチャイム設定 -->
+<script type="application/json" id="planData">{{ plan_json|safe }}</script>
+<script type="application/json" id="chimeData">{{ chime_json|safe }}</script>
+
+<div id="stage">
+  <img id="picture" alt="" hidden>
+  <div id="center" hidden></div>
+  <div id="slotTop" class="slot" hidden></div>
+  <div id="slotBtm" class="slot" hidden></div>
+
+  <div id="clock">
+    <div id="date"></div>
+    <div id="time"></div>
+    <div id="next"></div>
+  </div>
+
+  <div id="status"></div>
+  <div id="controls">
+    <button type="button" id="btnManual">手動切替</button>
+    <button type="button" id="btnFull">全画面</button>
+  </div>
+</div>
+
+<div id="startOverlay">
+  <div class="startBox">
+    <p class="big">画面をクリックするとチャイムを開始します</p>
+    <p>ブラウザの決まりで、最初に一度クリックしないと音を鳴らせません。<br>
+       クリック後は、このタブを表示したままにしてください（別のタブや最小化のままだと、ブラウザの省電力機能でチャイムが遅れることがあります）。</p>
+    <button type="button" id="btnStart">チャイムを開始する</button>
+  </div>
+</div>
+
+<dialog id="manual">
+  <h2>手動切替</h2>
+  <p class="hint">選んだ表示は、次のチャイムの時刻まで続きます。</p>
+  <div id="manualList"></div>
+  <div class="dlgBtns">
+    <button type="button" id="btnBack">スケジュールに戻る</button>
+    <button type="button" id="btnClose">閉じる</button>
+  </div>
+</dialog>
+</body>
+</html>

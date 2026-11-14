@@ -139,13 +139,31 @@ function assignYears(days, start) {
   return out;
 }
 
+
+// 時間割表（2ページ目の「1限目 10:10 ～ 11:00」…「質疑応答 16:35 ～ 17:35」）を読み取る
+function parseTimetable(allItems) {
+  const z2h = (t) => t.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
+  const rows = [];
+  allItems.forEach((it) => {
+    const t = z2h(it.s.trim());
+    const m = t.match(/^([1-9])限目$/);
+    if (!m && t !== "質疑応答") return;
+    const times = allItems
+      .filter((o) => o.page === it.page && Math.abs(o.y - it.y) < 1.5 && o.x > it.x && o.x < it.x + 110 && /^\d{1,2}:\d{2}$/.test(o.s.trim()))
+      .sort((a, b) => a.x - b.x).map((o) => o.s.trim().padStart(5, "0"));
+    if (times.length >= 2) rows.push({ label: m ? `${m[1]}限目` : "質疑応答", period: m ? Number(m[1]) : 0, start: times[0], end: times[1] });
+  });
+  const seen = new Set();
+  return rows.filter((r) => !seen.has(r.label) && seen.add(r.label)).sort((a, b) => a.start.localeCompare(b.start));
+}
+
 export async function parsePlanPdf(pdfjs, data) {
   const doc = await pdfjs.getDocument({ data, isEvalSupported: false }).promise;
   const pages = [];
   for (let p = 1; p <= doc.numPages; p++) {
     const page = await doc.getPage(p);
     const vp = page.getViewport({ scale: 1 });
-    pages.push(toItems(await page.getTextContent(), vp.height));
+    pages.push(toItems(await page.getTextContent(), vp.height).map((it) => ({ ...it, page: p })));
   }
   const all = pages.flat();
   const title = all.find((it) => /認定様式第\s*[6６]\s*号/.test(it.s)) || all.some((it) => /日\s*別\s*計\s*画\s*表/.test(it.s));
@@ -154,5 +172,5 @@ export async function parsePlanPdf(pdfjs, data) {
   const first = days.find((d) => d.md);
   const start = findStartYear(all, first && first.md);
   doc.destroy();
-  return { isPlan: !!title, days: assignYears(days, start), startYear: start ? start.year : null };
+  return { isPlan: !!title, days: assignYears(days, start), startYear: start ? start.year : null, timetable: parseTimetable(all) };
 }

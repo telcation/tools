@@ -63,6 +63,10 @@ async function loadPlanFile(f) {
     $("planMsg").textContent = `読み取りました：${label(days[0].iso)}〜${label(days[days.length - 1].iso)}、` +
       `訓練日 ${days.filter((d) => d.hours > 0).length} 日・合計 ${total}H。PDFの「時間合計」と同じか確認してください。`;
     $("daysField").value = JSON.stringify(days);
+    $("timetableField").value = JSON.stringify(r.timetable || []);
+    $("ttMsg").textContent = (r.timetable && r.timetable.length)
+      ? "時間割表：" + r.timetable.map((t) => `${t.label} ${t.start}〜${t.end}`).join("、")
+      : "時間割表は読み取れませんでした（チャイムの時刻は講師用のチャイム設定で入力してください）。";
     showPreview(days);
   } catch (e) {
     console.error(e);

@@ -51,9 +51,11 @@
   <section class="step" id="previewBox" hidden>
     <h2><span class="n">3</span>内容を確認して登録</h2>
     <p id="diffMsg"></p>
+    <p class="hint" id="ttMsg"></p>
     <div class="scroll"><table class="mx plan" id="previewTable"></table></div>
     <form method="post" action="admin" id="saveForm">
       <input type="hidden" name="days" id="daysField">
+      <input type="hidden" name="timetable" id="timetableField">
       <div class="row gap-y">
         <button type="submit" class="primary fixed" id="saveBtn">この内容で登録する</button>
         <a class="adminLink" href="./">受講者用画面へ戻る</a>
@@ -61,7 +63,9 @@
     </form>
   </section>
 
-  <p><a class="adminLink" href="./">受講者用画面へ戻る</a></p>
+  <p class="row"><a class="adminLink" href="admin-chime">チャイム（chime）の設定へ</a>
+     <a class="adminLink" href="chime">チャイム表示画面を開く</a>
+     <a class="adminLink" href="./">受講者用画面へ戻る</a></p>
 </main>
 </body>
 </html>
