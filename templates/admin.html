@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>日別計画表の登録（講師用）</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap">
+  <link rel="stylesheet" href="static/style.css?v={{ v }}">
+  <script type="module" src="static/admin.js?v={{ v }}"></script>
+</head>
+<body>
+<!-- 現在登録されている日別計画表（変更箇所の比較用） -->
+<script type="application/json" id="planData">{{ plan_json|safe }}</script>
+
+<header class="top">
+  <h1>日別計画表の登録（講師用）</h1>
+  <p>日別計画表（認定様式第6号）のPDFを読み取り、受講者用画面の日程として登録します。日程が変更になったときは、新しいPDFで登録し直してください。</p>
+</header>
+<div class="privacy"><div>
+  PDFはこのブラウザの中で読み取るだけで、PDFそのものは送信しません。<br>
+  サーバーに登録するのは「日付・訓練内容・時間」だけです。<strong>担当講師名は登録しません。</strong>
+</div></div>
+
+<main class="single">
+  {% if message %}<div class="msg notice" role="status">{{ message }}</div>{% endif %}
+
+  <section class="step">
+    <h2><span class="n">1</span>現在の登録</h2>
+    {% if plan and plan.days %}
+      {% set total = plan.days | sum(attribute='hours') %}
+      <p>登録日時：{{ plan.updated }}<br>
+         期間：{{ plan.days[0].iso }} 〜 {{ plan.days[-1].iso }}　／
+         訓練日 {{ plan.days | selectattr('hours') | list | length }} 日・合計 {{ total }}H</p>
+    {% else %}
+      <p>まだ登録されていません。</p>
+    {% endif %}
+  </section>
+
+  <section class="step">
+    <h2><span class="n">2</span>日別計画表PDFを読み取る</h2>
+    <div class="row">
+      <button type="button" id="planOpen" class="primary fixed">日別計画表PDFを開く</button>
+      <input type="file" id="planFile" accept=".pdf,application/pdf" hidden>
+    </div>
+    <div class="msg" id="planMsg"></div>
+  </section>
+
+  <section class="step" id="previewBox" hidden>
+    <h2><span class="n">3</span>内容を確認して登録</h2>
+    <p id="diffMsg"></p>
+    <div class="scroll"><table class="mx plan" id="previewTable"></table></div>
+    <form method="post" action="admin" id="saveForm">
+      <input type="hidden" name="days" id="daysField">
+      <div class="row gap-y">
+        <button type="submit" class="primary fixed" id="saveBtn">この内容で登録する</button>
+        <a class="adminLink" href="./">受講者用画面へ戻る</a>
+      </div>
+    </form>
+  </section>
+
+  <p><a class="adminLink" href="./">受講者用画面へ戻る</a></p>
+</main>
+</body>
+</html>

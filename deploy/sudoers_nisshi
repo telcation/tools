@@ -1,0 +1,3 @@
+# sudo visudo -f /etc/sudoers.d/nisshi で作成します
+# GitHub Actions から appuser がパスワードなしで再起動だけできるようにする
+appuser ALL=(root) NOPASSWD: /usr/bin/systemctl restart nisshi, /usr/bin/systemctl is-active nisshi

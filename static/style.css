@@ -1,0 +1,130 @@
+:root{
+  --bg:#eef1f5; --surface:#ffffff; --text:#14181f; --muted:#4d5562; --line:#c3cad4;
+  --ink:#1c3f94; --ink-text:#ffffff; --soft:#e4ebf8; --note-bg:#fff5df; --note:#6b4500;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#13161b; --surface:#1d2128; --text:#eef1f5; --muted:#aab2bf; --line:#3a414c;
+    --ink:#8fb0ff; --ink-text:#0d1a3a; --soft:#25304a; --note-bg:#3a2d12; --note:#ffd890;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#13161b; --surface:#1d2128; --text:#eef1f5; --muted:#aab2bf; --line:#3a414c;
+  --ink:#8fb0ff; --ink-text:#0d1a3a; --soft:#25304a; --note-bg:#3a2d12; --note:#ffd890;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"BIZ UDPGothic","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
+  font-size:16px;line-height:1.65}
+header.top{padding:20px 20px 8px;max-width:1400px;margin:0 auto}
+header.top h1{margin:0;font-size:1.6rem;letter-spacing:.04em}
+header.top p{margin:4px 0 0;color:var(--muted)}
+.privacy{max-width:1400px;margin:10px auto 0;padding:0 20px}
+.privacy div{background:var(--note-bg);color:var(--note);border-left:5px solid currentColor;
+  padding:10px 14px;border-radius:4px;font-size:.95rem}
+main{max-width:1400px;margin:0 auto;padding:16px 20px 40px;display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:1000px){main{grid-template-columns:minmax(0,1fr)}}
+section.step{background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  padding:16px 18px;margin-bottom:16px}
+section.step h2{margin:0 0 12px;font-size:1.15rem;display:flex;gap:10px;align-items:center}
+section.step h2 .n{display:inline-grid;place-items:center;width:1.8em;height:1.8em;border-radius:50%;
+  background:var(--ink);color:var(--ink-text);font-size:.9rem}
+label{display:block;font-weight:700;font-size:.92rem;margin:10px 0 4px}
+input[type=text],input[type=date],select,textarea{width:100%;font:inherit;color:var(--text);
+  background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:8px 10px}
+textarea{min-height:140px;resize:vertical}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{
+  outline:3px solid var(--ink);outline-offset:1px}
+button{font:inherit;cursor:pointer;border-radius:5px;padding:8px 14px;border:1px solid var(--ink);
+  background:var(--surface);color:var(--ink);font-weight:700}
+button.primary{background:var(--ink);color:var(--ink-text)}
+button.danger{border-color:#b3261e;color:#b3261e}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row > *{flex:1 1 180px}
+.msg{margin-top:10px;padding:8px 12px;border-radius:5px;background:var(--soft);font-size:.92rem}
+.msg:empty{display:none}
+.hint{color:var(--muted);font-size:.88rem;margin:4px 0 0}
+details{margin-top:10px}
+summary{cursor:pointer;font-weight:700;color:var(--ink)}
+.period{border-top:1px dashed var(--line);padding:10px 0}
+.period:first-of-type{border-top:none}
+.period .ph{font-weight:700;margin-bottom:4px}
+.pgrid{display:grid;grid-template-columns:2fr 2fr 1fr;gap:8px}
+@media (max-width:640px){.pgrid{grid-template-columns:1fr}}
+.pgrid label{margin:0 0 2px;font-size:.82rem}
+.chk{display:flex;align-items:center;gap:6px;font-weight:400;margin:6px 0 0}
+.chk input{width:1.1em;height:1.1em}
+.scroll{overflow-x:auto}
+table.mx{border-collapse:collapse;width:100%;min-width:560px;font-size:.92rem}
+table.mx th,table.mx td{border:1px solid var(--line);padding:4px 6px;text-align:center}
+table.mx td:first-child{text-align:left;white-space:nowrap}
+table.mx select{padding:4px;font-size:.88rem;min-width:4.5em}
+table.mx tr.fullday td{background:var(--soft)}
+.map td{padding:3px 4px}
+.map td:first-child{white-space:nowrap;color:var(--muted);font-size:.9rem}
+.counter{text-align:right;color:var(--muted);font-size:.85rem}
+
+/* ===== 用紙プレビュー（常に白地・黒文字） ===== */
+.previewWrap{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+@media (max-width:1000px){.previewWrap{position:static}}
+.previewBar{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.paperScroll{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px}
+.paper{background:#fff;color:#000;width:100%;min-width:620px;padding:22px 26px;
+  font-family:"BIZ UDPGothic","Yu Gothic","Meiryo",sans-serif;font-size:12.5px;line-height:1.5;
+  border:1px solid #999;position:relative}
+.paper .yoshiki{position:absolute;right:22px;top:14px;border:1px solid #000;padding:1px 10px;font-size:11px}
+.paper .draft{position:absolute;right:120px;top:40px;border:2px solid #000;padding:2px 12px;font-size:20px;font-weight:700}
+.paper h3{margin:18px 0 10px;font-size:20px;font-weight:700;letter-spacing:.1em}
+.paper h3 span{font-size:16px;font-weight:400;letter-spacing:.05em;margin-left:14px}
+.paper .headRow{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.paper .meta div{margin:2px 0}
+.paper .meta u{text-decoration:none;border-bottom:1px solid #000}
+.paper table{border-collapse:collapse;width:100%}
+.paper td,.paper th{border:1px solid #000;padding:4px 6px;vertical-align:top}
+.paper th{font-weight:400;text-align:center;vertical-align:middle}
+.paper .sign{width:300px;flex:0 0 300px}
+.paper .sign td{height:44px;width:33%}
+.paper .main{margin-top:12px}
+.paper .main td.t{text-align:center;vertical-align:middle;width:36px;font-size:15px}
+.paper .main td{height:56px}
+.paper .small{font-size:10px;color:#222;display:block}
+.paper .side{width:72px;text-align:center;vertical-align:middle}
+.paper .big td{height:46px}
+.paper .big td.kanso{height:110px;white-space:pre-wrap}
+.paper .notes{margin-top:8px;font-size:10px;line-height:1.55}
+.paper .empty{color:#888}
+
+@media print{
+  @page{size:A4 portrait;margin:10mm}
+  body{background:#fff}
+  header.top,.privacy,.inputs,.previewBar{display:none !important}
+  main{display:block;padding:0;max-width:none}
+  .previewWrap{position:static}
+  .paperScroll{border:none;padding:0;overflow:visible;background:#fff}
+  .paper{border:none;min-width:0;padding:0}
+}
+.gap-y{margin:8px 0}
+textarea.short{min-height:100px}
+.mt{margin-top:8px}
+button.fixed{flex:0 0 auto}
+.paper th.w-teacher{width:16%}
+.paper th.w-abs{width:26%}
+.paper table.big{border-top:none}
+/* ===== 講師用画面・リンク ===== */
+main.single{display:block}
+.msg.notice{margin:0 0 16px;font-weight:700}
+.adminLink{color:var(--ink);font-weight:700;align-self:center}
+.inputs .row .adminLink{flex:0 0 auto;margin-left:auto}
+table.plan td.left{text-align:left;white-space:normal}
+table.plan tr.changed td{background:var(--note-bg)}
+table.plan tr.offday td{color:var(--muted)}
+table.plan .was{font-size:.85em;color:var(--muted)}
+.row > .fixed{flex:0 0 auto}
