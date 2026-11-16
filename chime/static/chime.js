@@ -6,7 +6,8 @@
  *  ・手動切替（次のチャイムまで表示）
  * データはページに埋め込まれているので通信はしない。日付が変わったらページを読み込み直して最新の設定にする。
  */
-import { isTrainingDay, defaultSchedule, infoFor, todayIso, mediaUrl, readJson } from "./chime_common.js";
+import { isTrainingDay, defaultSchedule, infoFor, todayIso, mediaUrl, readJson,
+  applyStage, showPicture as drawPicture, showCenter as drawCenter, showSlots as drawSlots } from "./chime_common.js";
 
 const $ = (id) => document.getElementById(id);
 const WD = ["日", "月", "火", "水", "木", "金", "土"];
@@ -33,54 +34,10 @@ let fadeTimer = null, fadeIv = null;
 let chimeAudio = null;
 
 // ---------------- 見た目 ----------------
-const fontStack = `"${(style.font || "BIZ UDPGothic").replace(/"/g, "")}", "BIZ UDPGothic", "Meiryo", sans-serif`;
-document.body.style.fontFamily = fontStack;
-$("stage").style.background = style.bgcolor || "#000000";
-(function setClockColor() {
-  const h = (style.bgcolor || "#000000").replace("#", "");
-  if (h.length !== 6) return;
-  const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
-  const light = 0.299 * r + 0.587 * g + 0.114 * b > 128;
-  $("clock").style.color = light ? "#000" : "#fff";
-  $("status").style.color = light ? "#000" : "#fff";
-  $("next").style.color = light ? "#007a3d" : "#00ff88";
-})();
-
-function showPicture(name) {
-  const img = $("picture");
-  if (!name) { img.hidden = true; img.removeAttribute("src"); return; }
-  // 表示枠：横幅・高さの指定（空欄なら画面いっぱい）。縦横比固定なら枠の中に収める
-  img.style.width = `min(${style.img_width ? style.img_width + "px" : "100vw"}, 100vw)`;
-  img.style.height = `min(${style.img_height ? style.img_height + "px" : "100vh"}, 100vh)`;
-  img.style.objectFit = style.img_keep_ratio === false ? "fill" : "contain";
-  img.src = mediaUrl(name);
-  img.hidden = false;
-}
-
-function showCenter(text, color, size) {
-  const c = $("center");
-  if (!text) { c.hidden = true; return; }
-  c.textContent = text;
-  c.style.color = color || "#ffffff";
-  c.style.fontSize = `${size || 120}px`;
-  c.hidden = false;
-}
-
-function showSlots(on) {
-  const top = $("slotTop"), btm = $("slotBtm");
-  top.hidden = !(on && info.text);
-  btm.hidden = !(on && info.tool);
-  if (on && info.text) {
-    top.textContent = `テキスト：${info.text}`;
-    Object.assign(top.style, { top: `${style.text_y ?? 300}px`, fontSize: `${style.text_size ?? 60}px`,
-      color: style.text_color || "#fff", background: style.text_bg || "transparent" });
-  }
-  if (on && info.tool) {
-    btm.textContent = `ツール：${info.tool}`;
-    Object.assign(btm.style, { top: `calc(100vh - ${style.tool_y ?? 300}px)`, fontSize: `${style.tool_size ?? 60}px`,
-      color: style.tool_color || "#fff", background: style.tool_bg || "transparent" });
-  }
-}
+applyStage({ stage: $("stage"), clock: $("clock"), next: $("next"), status: $("status") }, style);
+const showPicture = (name) => drawPicture($("picture"), name, style);
+const showCenter = (text, color, size) => drawCenter($("center"), text, color, size);
+const showSlots = (on) => drawSlots($("slotTop"), $("slotBtm"), info, style, on);
 
 // ---------------- 音 ----------------
 function stopBgm() {

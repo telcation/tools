@@ -57,3 +57,66 @@ export function mediaUrl(name) {
 export function readJson(id, fallback) {
   try { return JSON.parse(document.getElementById(id).textContent) || fallback; } catch (_) { return fallback; }
 }
+
+// ---------------- 表示（チャイム表示画面と講師用の「テスト実行」で共通） ----------------
+const isDark = (hex) => {
+  const h = String(hex || "").replace("#", "");
+  if (h.length !== 6) return true;
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+  return 0.299 * r + 0.587 * g + 0.114 * b <= 128;
+};
+
+// 背景色・フォント・時計の色
+export function applyStage(el, style) {
+  el.stage.style.background = style.bgcolor || "#000000";
+  el.stage.style.fontFamily = `"${(style.font || "BIZ UDPGothic").replace(/"/g, "")}", "BIZ UDPGothic", "Meiryo", sans-serif`;
+  const clock = style.clock_color || "#000000";
+  const dark = isDark(clock);
+  if (el.clock) {
+    el.clock.style.color = clock;
+    // 文字が背景や画像に埋もれないよう、文字色と反対の色でふちどる
+    el.clock.style.textShadow = dark ? "0 0 4px #fff, 0 0 8px #fff" : "0 0 4px #000, 0 0 8px #000";
+  }
+  if (el.next) el.next.style.color = dark ? "#007a3d" : "#00ff88";
+  if (el.status) el.status.style.color = clock;
+}
+
+// 画像：縦横比は変えずに大きさを合わせる
+//   width   … 横幅に合わせる（デスクトップ版と同じ。縦が画面より長い分は上下が切れる）
+//   cover   … 画面全体を覆う（はみ出した分は切れる）
+//   contain … 画像全体を表示（余白に背景色が見える）
+export function showPicture(img, name, style) {
+  if (!name) { img.hidden = true; img.removeAttribute("src"); return; }
+  const W = `min(${style.img_width ? style.img_width + "px" : "100vw"}, 100vw)`;
+  const H = `min(${style.img_height ? style.img_height + "px" : "100vh"}, 100vh)`;
+  const fit = style.img_keep_ratio === false ? "fill" : (style.img_fit || "width");
+  img.style.width = W;
+  if (fit === "width") { img.style.height = "auto"; img.style.objectFit = ""; }
+  else { img.style.height = H; img.style.objectFit = fit; }
+  img.src = mediaUrl(name);
+  img.hidden = false;
+}
+
+export function showCenter(el, text, color, size) {
+  if (!text) { el.hidden = true; return; }
+  el.textContent = text;
+  el.style.color = color || "#ffffff";
+  el.style.fontSize = `${size || 120}px`;
+  el.hidden = false;
+}
+
+// 準備中画面の「テキスト」「ツール」
+export function showSlots(top, btm, info, style, on) {
+  top.hidden = !(on && info.text);
+  btm.hidden = !(on && info.tool);
+  if (on && info.text) {
+    top.textContent = `テキスト：${info.text}`;
+    Object.assign(top.style, { top: `${style.text_y ?? 300}px`, fontSize: `${style.text_size ?? 60}px`,
+      color: style.text_color || "#fff", background: style.text_bg || "transparent" });
+  }
+  if (on && info.tool) {
+    btm.textContent = `ツール：${info.tool}`;
+    Object.assign(btm.style, { top: `calc(100vh - ${style.tool_y ?? 300}px)`, fontSize: `${style.tool_size ?? 60}px`,
+      color: style.tool_color || "#fff", background: style.tool_bg || "transparent" });
+  }
+}

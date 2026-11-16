@@ -24,7 +24,9 @@ MAX_MEDIA_TOTAL = 300 * 1024 * 1024  # 合計 300MB まで
 
 DEFAULT_STYLE = {
     "bgcolor": "#000000",
+    "clock_color": "#000000",   # 日付・時刻の文字色
     "font": "BIZ UDPGothic",
+    "img_fit": "width",         # width＝横幅に合わせる / cover＝画面全体を覆う / contain＝画像全体を表示
     "img_keep_ratio": True,
     "img_width": None,     # 空欄＝画面に合わせる
     "img_height": None,
@@ -126,6 +128,8 @@ class Store:
             raise ValueError("フォント名に使えない文字があります")
         style = {
             "bgcolor": color(st.get("bgcolor"), "背景") or DEFAULT_STYLE["bgcolor"],
+            "clock_color": color(st.get("clock_color"), "日付・時刻") or DEFAULT_STYLE["clock_color"],
+            "img_fit": st.get("img_fit") if st.get("img_fit") in ("width", "cover", "contain") else "width",
             "font": font or DEFAULT_STYLE["font"],
             "img_keep_ratio": bool(st.get("img_keep_ratio", True)),
             "img_width": num(st.get("img_width"), 1, 10000, "画像の横幅", True),

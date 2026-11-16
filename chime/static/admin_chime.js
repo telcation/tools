@@ -2,7 +2,8 @@
  * 講師用：チャイムの設定画面
  * 画面で編集した内容を JSON にまとめ、「設定を保存する」でフォーム送信する（それ以外の通信はしない）
  */
-import { subjectKey, isTrainingDay, defaultSchedule, todayIso, readJson } from "./chime_common.js";
+import { subjectKey, isTrainingDay, defaultSchedule, todayIso, readJson, infoFor,
+  applyStage, showPicture, showCenter, showSlots } from "./chime_common.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -39,6 +40,8 @@ function initBasic() {
     s.innerHTML = mediaOptions(s.dataset.media, s.dataset.none, v);
   });
   $("bgcolor").value = hex(style.bgcolor, "#000000");
+  $("clockColor").value = hex(style.clock_color, "#000000");
+  $("imgFit").value = ["width", "cover", "contain"].includes(style.img_fit) ? style.img_fit : "width";
   $("trainingOnly").checked = cfg.training_days_only !== false;
   $("font").value = style.font || "";
   $("imgW").value = style.img_width ?? "";
@@ -164,13 +167,15 @@ $("addDisp").addEventListener("click", () => {
 document.querySelectorAll("#saveForm section:nth-of-type(1) input, #saveForm section:nth-of-type(1) select")
   .forEach((el) => el.addEventListener("input", setDirty));
 
-$("saveForm").addEventListener("submit", () => {
+// 画面の入力内容（保存前も含む）を、保存する形にまとめる
+function collect() {
   const num = (id) => ($(id).value === "" ? null : Number($(id).value));
-  const data = {
+  return {
     chime_sound: $("chimeSound").value, standby_image: $("standbyImage").value, standby_bgm: $("standbyBgm").value,
     training_days_only: $("trainingOnly").checked,
     style: {
-      bgcolor: $("bgcolor").value, font: $("font").value.trim(),
+      bgcolor: $("bgcolor").value, clock_color: $("clockColor").value, img_fit: $("imgFit").value,
+      font: $("font").value.trim(),
       img_keep_ratio: $("imgRatio").checked, img_width: num("imgW"), img_height: num("imgH"),
       text_size: num("textSize"), tool_size: num("toolSize"),
       text_color: $("textColor").value, tool_color: $("toolColor").value,
@@ -179,10 +184,65 @@ $("saveForm").addEventListener("submit", () => {
     },
     schedule, subjects, days: dayOver, displays,
   };
-  $("chimeField").value = JSON.stringify(data);
+}
+
+$("saveForm").addEventListener("submit", () => {
+  $("chimeField").value = JSON.stringify(collect());
   dirty = false;
   $("saveBtn").disabled = true; $("saveBtn").textContent = "保存しています…";
 });
+
+// ---------- テスト実行：準備中画面 → 各時刻 を2秒ずつ順に表示（音は鳴らさない・保存前の内容で確認できる） ----------
+const TEST_SEC = 2;
+let testTimer = null;
+function stopTest() {
+  clearTimeout(testTimer); testTimer = null;
+  $("testStage").hidden = true;
+  document.removeEventListener("keydown", escStop);
+  $("testRun").focus();
+}
+function escStop(e) { if (e.key === "Escape") stopTest(); }
+function runTest() {
+  const data = collect(), st = data.style;
+  const rows = schedule.filter((e) => /^\d{2}:\d{2}$/.test(e.time || "")).slice().sort((a, b) => a.time.localeCompare(b.time));
+  // 準備中画面に出す例：今日が訓練日なら今日、そうでなければ次の訓練日（なければ最初の訓練日）
+  const ti = todayIso();
+  const sample = days.find((d) => d.iso === ti) || days.find((d) => d.iso > ti) || days[0] || null;
+  const info = infoFor(data, sample);
+  const steps = [{ kind: "standby", label: "準備中画面（最初の時刻より前）" + (sample ? `　例：${label(sample.iso)} ${subjectKey(sample.content)}` : "") }]
+    .concat(rows.map((e) => ({ kind: "entry", e, label: `${e.time}　${e.text || "（文字なし）"}${e.chime !== false ? "" : "（音なし）"}` })));
+  const el = { stage: $("testStage"), clock: $("tsClock"), next: $("tsNext") };
+  applyStage(el, st);
+  const d = new Date();
+  $("tsDate").textContent = `${d.getFullYear()}（令和${d.getFullYear() - 2018}）年${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）`;
+  $("testStage").hidden = false;
+  document.addEventListener("keydown", escStop);
+  $("tsStop").focus();
+  let i = 0;
+  const show = () => {
+    const s = steps[i];
+    const next = s.kind === "entry" ? rows.find((r) => r.time > s.e.time) : rows[0];
+    // 準備中画面は、最初の時刻の5分前として表示する
+    const before = (t) => { const [h, m] = t.split(":").map(Number), x = Math.max(0, h * 60 + m - 5); return `${String(Math.floor(x / 60)).padStart(2, "0")}:${String(x % 60).padStart(2, "0")}`; };
+    $("tsTime").textContent = s.kind === "entry" ? `${s.e.time}:00` : (rows[0] ? `${before(rows[0].time)}:00` : "");
+    $("tsNext").textContent = next ? `次のチャイム：${next.time}` : "次のチャイム：なし";
+    if (s.kind === "standby") {
+      showPicture($("tsPicture"), data.standby_image, st);
+      showCenter($("tsCenter"), "");
+      showSlots($("tsTop"), $("tsBtm"), info, st, true);
+    } else {
+      showSlots($("tsTop"), $("tsBtm"), info, st, false);
+      showPicture($("tsPicture"), s.e.image, st);
+      showCenter($("tsCenter"), s.e.text, s.e.color, s.e.size);
+    }
+    $("tsLabel").textContent = `テスト実行 ${i + 1} / ${steps.length}　${s.label}`;
+    i++;
+    testTimer = setTimeout(() => (i < steps.length ? show() : stopTest()), TEST_SEC * 1000);
+  };
+  show();
+}
+$("testRun").addEventListener("click", runTest);
+$("tsStop").addEventListener("click", stopTest);
 
 window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
 document.querySelectorAll("form.delForm").forEach((f) => f.addEventListener("submit", (e) => {

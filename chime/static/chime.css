@@ -11,8 +11,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#fff;
   max-width:96vw;line-height:1.25}
 .slot{position:absolute;left:50%;transform:translate(-50%,-50%);padding:.12em .5em;font-weight:700;
   white-space:nowrap;max-width:98vw;overflow:hidden;text-overflow:ellipsis}
-#clock{position:absolute;top:10px;left:50%;transform:translateX(-50%);text-align:center;z-index:5;
-  text-shadow:0 0 6px rgba(0,0,0,.6)}
+#clock{position:absolute;top:10px;left:50%;transform:translateX(-50%);text-align:center;z-index:5;color:#000}
 #date{font-size:max(20px,2.6vh)}
 #time{font-size:max(36px,6.5vh);font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
 #next{font-size:max(18px,2.4vh);font-weight:700}

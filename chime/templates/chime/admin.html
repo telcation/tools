@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex">
   <title>チャイムの設定（講師用）</title>
+{% include "_icons.html" %}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap">
@@ -68,7 +69,8 @@
     <h2><span class="n">2</span>基本設定</h2>
     <div class="grid2">
       <div><label for="chimeSound">チャイム音</label><select id="chimeSound" data-media="audio" data-none="（標準の電子音）"></select></div>
-      <div><label for="bgcolor">背景色</label><input type="color" id="bgcolor"></div>
+      <div class="row"><div><label for="bgcolor">背景色</label><input type="color" id="bgcolor"></div>
+        <div><label for="clockColor">日付・時刻の文字色</label><input type="color" id="clockColor"></div></div>
       <div><label for="standbyImage">準備中画面の画像</label><select id="standbyImage" data-media="image" data-none="（なし）"></select></div>
       <div><label for="standbyBgm">準備中画面のBGM</label><select id="standbyBgm" data-media="audio" data-none="（なし）"></select></div>
     </div>
@@ -80,7 +82,13 @@
       <div class="grid2">
         <div><label for="font">フォント</label><input type="text" id="font" placeholder="BIZ UDPGothic"></div>
         <div><label for="imgW">画像の横幅（px・空欄＝画面に合わせる）</label><input type="number" id="imgW" min="1"></div>
-        <div><label class="chk"><input type="checkbox" id="imgRatio">画像の縦横比を固定</label></div>
+        <div><label class="chk"><input type="checkbox" id="imgRatio">画像の縦横比を固定</label>
+          <label for="imgFit">画像の合わせ方（縦横比を固定するとき）</label>
+          <select id="imgFit">
+            <option value="width">横幅に合わせる（デスクトップ版と同じ・縦が長い分は上下が切れる）</option>
+            <option value="cover">画面全体を覆う（はみ出した分は切れる）</option>
+            <option value="contain">画像全体を表示（余白に背景色が見える）</option>
+          </select></div>
         <div><label for="imgH">画像の高さ（px・空欄＝画面に合わせる）</label><input type="number" id="imgH" min="1"></div>
       </div>
       <h3>準備中画面の「テキスト」「ツール」</h3>
@@ -110,7 +118,10 @@
     <div class="row gap-y">
       <button type="button" id="addRow" class="fixed">行を追加</button>
       <button type="button" id="fromTimetable" class="fixed">時間割表から作り直す</button>
+      <button type="button" id="testRun" class="primary fixed">テスト実行</button>
     </div>
+    <p class="hint">「テスト実行」：準備中画面と各時刻の表示を、2秒ずつ順に画面いっぱいに表示します（チャイム・BGMは鳴りません）。
+      保存前の内容で確認できます。途中でやめるときは「停止」か Esc キー。</p>
     <div class="scroll"><table class="mx plan" id="schedTable"></table></div>
   </section>
 
@@ -133,6 +144,16 @@
     <div class="row gap-y"><button type="button" id="addDisp" class="fixed">行を追加</button></div>
     <div class="scroll"><table class="mx plan" id="dispTable"></table></div>
   </section>
+
+  <!-- テスト実行の表示（チャイム表示画面と同じ見た目） -->
+  <div id="testStage" class="testStage" hidden>
+    <img id="tsPicture" class="tsPicture" alt="" hidden>
+    <div id="tsCenter" class="tsCenter" hidden></div>
+    <div id="tsTop" class="tsSlot" hidden></div>
+    <div id="tsBtm" class="tsSlot" hidden></div>
+    <div id="tsClock" class="tsClock"><div id="tsDate"></div><div id="tsTime"></div><div id="tsNext"></div></div>
+    <div class="tsBar"><span id="tsLabel"></span><button type="button" id="tsStop">停止</button></div>
+  </div>
 
   <div class="saveBar">
     <span id="dirtyMsg"></span>
