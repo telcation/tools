@@ -102,6 +102,11 @@
     <p class="hint">時刻になるとチャイムが鳴り、表示文字・画像・BGMに切り替わります。最初の時刻より前は「準備中画面」です。
       BGMは次の時刻の2秒前からフェードアウトします。</p>
     <p class="hint" id="ttNote"></p>
+    <div class="msg notice" id="ttMissing" hidden>
+      日別計画表に時間割表が登録されていないため、チャイム時刻を自動で作れません。
+      <a class="adminLink" href="{{ url_for('admin') }}">日別計画表の登録</a>で、同じPDFをもう一度登録してください
+      （チャイム機能を追加する前に登録した日程には、時間割表が含まれていません）。「行を追加」で手入力することもできます。
+    </div>
     <div class="row gap-y">
       <button type="button" id="addRow" class="fixed">行を追加</button>
       <button type="button" id="fromTimetable" class="fixed">時間割表から作り直す</button>

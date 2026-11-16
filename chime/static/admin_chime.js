@@ -55,9 +55,9 @@ function initBasic() {
 
 // ---------- 3. チャイム時刻 ----------
 function renderSched() {
-  $("ttNote").textContent = (plan.timetable || []).length
-    ? "時間割表：" + plan.timetable.map((t) => `${t.label} ${t.start}〜${t.end}`).join("、")
-    : "時間割表が登録されていません（日別計画表の登録で読み取られます）。";
+  const hasTt = (plan.timetable || []).length > 0;
+  $("ttNote").textContent = hasTt ? "時間割表：" + plan.timetable.map((t) => `${t.label} ${t.start}〜${t.end}`).join("、") : "";
+  $("ttMissing").hidden = hasTt || schedule.length > 0;
   $("schedTable").innerHTML = `<thead><tr><th>時刻</th><th>音</th><th>表示文字</th><th>文字色</th><th>大きさ</th><th>画像</th><th>BGM</th><th></th></tr></thead><tbody>` +
     schedule.map((e, i) => `<tr>
       <td><input type="time" data-i="${i}" data-k="time" value="${esc(e.time)}" required></td>

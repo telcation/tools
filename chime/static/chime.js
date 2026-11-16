@@ -219,7 +219,10 @@ function openManual() {
 function startAudio() {
   if (audioReady) return;
   audioReady = true;
-  try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume(); } catch (_) { audioCtx = null; }
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { audioCtx = null; }
+  }
+  if (audioCtx) audioCtx.resume();
   $("startOverlay").hidden = true;
   statusText();
   returnToSchedule(); // 今の表示のBGMを流し始める
@@ -244,3 +247,9 @@ returnToSchedule();
 statusText();
 tick(); setInterval(tick, 500);
 wake();
+
+// 起動用ファイル（start_chime.bat）から開いたときなど、クリックなしで音を鳴らせるブラウザでは自動で開始する
+try {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (ctx.state === "running") { audioCtx = ctx; startAudio(); } else ctx.close();
+} catch (_) { /* 音を鳴らせないブラウザ：クリックを待つ */ }
