@@ -196,16 +196,21 @@ $("saveForm").addEventListener("submit", () => {
   $("saveBtn").disabled = true; $("saveBtn").textContent = "保存しています…";
 });
 
-// ---------- テスト実行：準備中画面 → 各時刻 を2秒ずつ順に表示（音は鳴らさない・保存前の内容で確認できる） ----------
-const TEST_SEC = 2;
-let testTimer = null;
+// ---------- テスト実行：準備中画面 → 各時刻 を、クリックするたびに次へ（音は鳴らさない・保存前の内容で確認できる） ----------
+//   次へ：画面をクリック ／ → ／ Space ／ Enter　　前へ：← ／ Backspace　　やめる：「停止」／ Esc
+let testStep = null;  // 表示中の番号を進める関数（テスト中だけ入る）
 function stopTest() {
-  clearTimeout(testTimer); testTimer = null;
+  testStep = null;
   $("testStage").hidden = true;
-  document.removeEventListener("keydown", escStop);
+  document.removeEventListener("keydown", testKey);
   $("testRun").focus();
 }
-function escStop(e) { if (e.key === "Escape") stopTest(); }
+function testKey(e) {
+  if (!testStep) return;
+  if (e.key === "Escape") { e.preventDefault(); stopTest(); }
+  else if (["ArrowRight", " ", "Enter", "PageDown"].includes(e.key)) { e.preventDefault(); testStep(1); }
+  else if (["ArrowLeft", "Backspace", "PageUp"].includes(e.key)) { e.preventDefault(); testStep(-1); }
+}
 function runTest() {
   const data = collect(), st = data.style;
   const rows = schedule.filter((e) => /^\d{2}:\d{2}$/.test(e.time || "")).slice().sort((a, b) => a.time.localeCompare(b.time));
@@ -215,19 +220,15 @@ function runTest() {
   const info = infoFor(data, sample);
   const steps = [{ kind: "standby", label: "準備中画面（最初の時刻より前）" + (sample ? `　例：${label(sample.iso)} ${subjectKey(sample.content)}` : "") }]
     .concat(rows.map((e) => ({ kind: "entry", e, label: `${e.time}　${e.text || "（文字なし）"}${e.chime !== false ? "" : "（音なし）"}` })));
-  const el = { stage: $("testStage"), clock: $("tsClock"), next: $("tsNext") };
-  applyStage(el, st);
+  applyStage({ stage: $("testStage"), clock: $("tsClock"), next: $("tsNext") }, st);
   const d = new Date();
   $("tsDate").textContent = `${d.getFullYear()}（令和${d.getFullYear() - 2018}）年${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）`;
-  $("testStage").hidden = false;
-  document.addEventListener("keydown", escStop);
-  $("tsStop").focus();
+  // 準備中画面は、最初の時刻の5分前として表示する
+  const before = (t) => { const [h, m] = t.split(":").map(Number), x = Math.max(0, h * 60 + m - 5); return `${String(Math.floor(x / 60)).padStart(2, "0")}:${String(x % 60).padStart(2, "0")}`; };
   let i = 0;
   const show = () => {
     const s = steps[i];
     const next = s.kind === "entry" ? rows.find((r) => r.time > s.e.time) : rows[0];
-    // 準備中画面は、最初の時刻の5分前として表示する
-    const before = (t) => { const [h, m] = t.split(":").map(Number), x = Math.max(0, h * 60 + m - 5); return `${String(Math.floor(x / 60)).padStart(2, "0")}:${String(x % 60).padStart(2, "0")}`; };
     $("tsTime").textContent = s.kind === "entry" ? `${s.e.time}:00` : (rows[0] ? `${before(rows[0].time)}:00` : "");
     $("tsNext").textContent = next ? `次のチャイム：${next.time}` : "次のチャイム：なし";
     if (s.kind === "standby") {
@@ -241,13 +242,30 @@ function runTest() {
       showPicture($("tsPicture"), s.e.image, st);
       showCenter($("tsCenter"), s.e.text, s.e.color, s.e.size);
     }
+    const last = i === steps.length - 1;
     $("tsLabel").textContent = `テスト実行 ${i + 1} / ${steps.length}　${s.label}`;
-    i++;
-    testTimer = setTimeout(() => (i < steps.length ? show() : stopTest()), TEST_SEC * 1000);
+    $("tsHint").textContent = last ? "最後です。クリックで終了" : "クリックで次へ（← で前へ）";
+    $("tsPrev").disabled = i === 0;
   };
+  testStep = (dir) => {
+    const n = i + dir;
+    if (n >= steps.length) { stopTest(); return; }  // 最後の画面でもう一度進めると終了
+    if (n < 0) return;
+    i = n; show();
+  };
+  $("testStage").hidden = false;
+  document.addEventListener("keydown", testKey);
   show();
+  $("testStage").focus();
 }
 $("testRun").addEventListener("click", runTest);
+// 画面のどこをクリックしても次へ（下の帯のボタンは除く）
+$("testStage").addEventListener("click", (e) => {
+  if (!testStep || e.target.closest(".tsBar button")) return;
+  testStep(1);
+});
+$("tsPrev").addEventListener("click", () => testStep && testStep(-1));
+$("tsNextBtn").addEventListener("click", () => testStep && testStep(1));
 $("tsStop").addEventListener("click", stopTest);
 
 window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });

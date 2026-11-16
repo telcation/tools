@@ -153,8 +153,8 @@
       <button type="button" id="fromTimetable" class="fixed">時間割表から作り直す</button>
       <button type="button" id="testRun" class="primary fixed">テスト実行</button>
     </div>
-    <p class="hint">「テスト実行」：準備中画面と各時刻の表示を、2秒ずつ順に画面いっぱいに表示します（チャイム・BGMは鳴りません）。
-      保存前の内容で確認できます。途中でやめるときは「停止」か Esc キー。</p>
+    <p class="hint">「テスト実行」：準備中画面と各時刻の表示を、画面いっぱいに1つずつ表示します（チャイム・BGMは鳴りません）。保存前の内容で確認できます。<br>
+      画面をクリック（または → / Space / Enter）で次へ、← で前へ、最後の画面でクリックすると終了します。途中でやめるときは「停止」か Esc キー。</p>
     <div class="scroll"><table class="mx plan" id="schedTable"></table></div>
   </section>
 
@@ -179,14 +179,16 @@
   </section>
 
   <!-- テスト実行の表示（チャイム表示画面と同じ見た目） -->
-  <div id="testStage" class="testStage" hidden>
+  <div id="testStage" class="testStage" tabindex="-1" hidden>
     <img id="tsPicture" class="tsPicture" alt="" hidden>
     <div id="tsCenter" class="tsCenter" hidden></div>
     <div id="tsTop" class="tsSlot" hidden></div>
     <div id="tsBtm" class="tsSlot" hidden></div>
     <div id="tsToday" class="today" hidden></div>
     <div id="tsClock" class="tsClock"><div id="tsDate"></div><div id="tsTime"></div><div id="tsNext"></div></div>
-    <div class="tsBar"><span id="tsLabel"></span><button type="button" id="tsStop">停止</button></div>
+    <div class="tsBar"><span id="tsLabel"></span>
+      <span class="tsBtns"><span id="tsHint"></span>
+        <button type="button" id="tsPrev">前へ</button><button type="button" id="tsNextBtn">次へ</button><button type="button" id="tsStop">停止</button></span></div>
   </div>
 
   <div class="saveBar">

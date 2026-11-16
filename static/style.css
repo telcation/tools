@@ -181,3 +181,6 @@ h1.brand img{width:48px;height:48px}
 .today ul{margin:0;padding-left:1.1em}
 .today li{margin:.05em 0}
 .todaySrc{font-size:.45em;color:#555;text-align:right;margin-top:.2em}
+.testStage{cursor:pointer;outline:none}
+.tsBtns{display:flex;align-items:center;gap:8px;font-weight:400}
+.tsBar button:disabled{opacity:.45}
