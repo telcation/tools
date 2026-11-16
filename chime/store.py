@@ -34,6 +34,9 @@ DEFAULT_STYLE = {
     "text_color": "#ffffff", "tool_color": "#ffffff",
     "text_bg": "#2c3e50", "tool_bg": "#c0392b",
     "text_y": 300, "tool_y": 300,
+    "today_enabled": True,      # 準備中画面に「今日は何の日？」を表示する
+    "today_size": 34,           # 文字の大きさ（px）
+    "today_top": 55,            # 表示位置（画面の上端から％）
 }
 
 DEFAULT_CHIME = {
@@ -142,6 +145,9 @@ class Store:
             "tool_bg": color(st.get("tool_bg"), "ツールの背景"),
             "text_y": num(st.get("text_y", 300), 0, 5000, "テキストの位置"),
             "tool_y": num(st.get("tool_y", 300), 0, 5000, "ツールの位置"),
+            "today_enabled": bool(st.get("today_enabled", True)),
+            "today_size": num(st.get("today_size", 34), 10, 120, "「今日は何の日？」の文字の大きさ"),
+            "today_top": num(st.get("today_top", 55), 10, 90, "「今日は何の日？」の位置"),
         }
 
         sched = raw.get("schedule") or []

@@ -16,6 +16,7 @@
 <!-- 登録済みの日別計画表（日付・訓練内容・時間・時間割表のみ）とチャイム設定 -->
 <script type="application/json" id="planData">{{ plan_json|safe }}</script>
 <script type="application/json" id="chimeData">{{ chime_json|safe }}</script>
+<script type="application/json" id="todayData">{{ today_json|safe }}</script>
 <script type="application/json" id="mediaBase">{{ (url_for('chime.media', name='x')[:-1])|tojson }}</script>
 
 <div id="stage">
@@ -23,6 +24,7 @@
   <div id="center" hidden></div>
   <div id="slotTop" class="slot" hidden></div>
   <div id="slotBtm" class="slot" hidden></div>
+  <div id="today" class="today" hidden></div>
 
   <div id="clock">
     <div id="date"></div>

@@ -120,3 +120,35 @@ export function showSlots(top, btm, info, style, on) {
       color: style.tool_color || "#fff", background: style.tool_bg || "transparent" });
   }
 }
+
+// 準備中画面の「今日は何の日？」（Wikipedia の記念日・年中行事と、IT・コンピュータ関連のできごと）
+export function showToday(el, data, style, on) {
+  const ok = on && style.today_enabled !== false && data &&
+    ((data.anniversaries || []).length || (data.it_events || []).length);
+  el.hidden = !ok;
+  if (!ok) return;
+  el.replaceChildren();
+  el.style.top = `${style.today_top ?? 55}vh`;
+  el.style.fontSize = `${style.today_size ?? 34}px`;
+  const h = document.createElement("div");
+  h.className = "todayTitle";
+  h.textContent = `今日は何の日？　${data.title || ""}`;
+  el.append(h);
+  const cols = document.createElement("div");
+  cols.className = "todayCols";
+  const col = (title, items) => {
+    if (!items.length) return;
+    const box = document.createElement("div");
+    const t = document.createElement("div"); t.className = "todayHead"; t.textContent = title;
+    const ul = document.createElement("ul");
+    items.forEach((x) => { const li = document.createElement("li"); li.textContent = x; ul.append(li); });
+    box.append(t, ul); cols.append(box);
+  };
+  col("記念日・年中行事", data.anniversaries || []);
+  col("IT・コンピュータのできごと", (data.it_events || []).map((e) => `${e.year < 0 ? "紀元前" + -e.year : e.year}年　${e.text}`));
+  el.append(cols);
+  const src = document.createElement("div");
+  src.className = "todaySrc";
+  src.textContent = `出典：Wikipedia「${data.title || ""}」（CC BY-SA）`;
+  el.append(src);
+}

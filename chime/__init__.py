@@ -6,21 +6,31 @@
   /tools/chime/admin         チャイムの設定（講師用・パスワード付き）
 """
 import json
+from datetime import date
 
 from flask import Blueprint, redirect, render_template, request, send_from_directory, url_for
 
 import core
 from .store import Store
+from .today import Today
 
 bp = Blueprint("chime", __name__, template_folder="templates",
                static_folder="static", static_url_path="/static")
 STORE = Store(core.DATA_DIR)
+TODAY = Today(core.DATA_DIR)
+
+
+def today_data():
+    """「今日は何の日？」（表示しない設定のときは取りに行かない）"""
+    if STORE.load()["style"].get("today_enabled", True) is False:
+        return None
+    return TODAY.get()
 
 
 @bp.route("/")
 def index():
     return render_template("chime/chime.html", plan_json=core.plan_json_for_page(),
-                           chime_json=core.to_page_json(STORE.load()))
+                           chime_json=core.to_page_json(STORE.load()), today_json=core.to_page_json(today_data()))
 
 
 @bp.route("/media/<path:name>")
@@ -30,11 +40,13 @@ def media(name):
 
 def render_admin(message="", status=200):
     media = STORE.list_media()
+    today = today_data()
     return render_template("chime/admin.html", message=message,
                            plan_json=core.plan_json_for_page(),
                            chime_json=core.to_page_json(STORE.load()),
                            media_json=core.to_page_json(media),
-                           media=media, usage=STORE.usage()), status
+                           media=media, usage=STORE.usage(),
+                           today=today, today_json=core.to_page_json(today)), status
 
 
 def back(msg):
@@ -71,6 +83,16 @@ def admin_upload():
             errors.append(str(e))
     msg = "　".join(([("アップロードしました：" + "、".join(names))] if names else []) + errors)
     return back(msg or "ファイルが選ばれていません")
+
+
+@bp.route("/admin/today", methods=["POST"])
+def admin_today_refresh():
+    """「今日は何の日？」を Wikipedia から取り直す"""
+    core.require_admin_post()
+    d = TODAY.refresh(date.today())
+    if d.get("error"):
+        return back(f"「今日は何の日？」を取得できませんでした（{d['error']}）")
+    return back(f"「今日は何の日？」を取得しました（記念日 {len(d['anniversaries'])} 件・IT関連 {len(d['it_events'])} 件）")
 
 
 @bp.route("/admin/delete", methods=["POST"])

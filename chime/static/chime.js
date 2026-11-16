@@ -7,7 +7,7 @@
  * データはページに埋め込まれているので通信はしない。日付が変わったらページを読み込み直して最新の設定にする。
  */
 import { isTrainingDay, defaultSchedule, infoFor, todayIso, mediaUrl, readJson,
-  applyStage, showPicture as drawPicture, showCenter as drawCenter, showSlots as drawSlots } from "./chime_common.js";
+  applyStage, showPicture as drawPicture, showCenter as drawCenter, showSlots as drawSlots, showToday as drawToday } from "./chime_common.js";
 
 const $ = (id) => document.getElementById(id);
 const WD = ["日", "月", "火", "水", "木", "金", "土"];
@@ -37,7 +37,11 @@ let chimeAudio = null;
 applyStage({ stage: $("stage"), clock: $("clock"), next: $("next"), status: $("status") }, style);
 const showPicture = (name) => drawPicture($("picture"), name, style);
 const showCenter = (text, color, size) => drawCenter($("center"), text, color, size);
-const showSlots = (on) => drawSlots($("slotTop"), $("slotBtm"), info, style, on);
+const todayInfo = readJson("todayData", null);
+const showSlots = (on) => {
+  drawSlots($("slotTop"), $("slotBtm"), info, style, on);
+  drawToday($("today"), todayInfo, style, on);  // 「今日は何の日？」も準備中画面だけに出す
+};
 
 // ---------------- 音 ----------------
 function stopBgm() {
@@ -103,6 +107,7 @@ function showStandby(withSound) {
   showPicture(cfg.standby_image);
   showCenter("");
   showSlots(active);
+  drawToday($("today"), todayInfo, style, true);
   if (withSound && active) playBgm(cfg.standby_bgm, "00:00"); else stopBgm();
 }
 function showEntry(e) {

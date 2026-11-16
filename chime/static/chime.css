@@ -39,3 +39,15 @@ html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#fff;
 .dlgBtns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 #btnBack{background:#1c3f94}
 @media (prefers-reduced-motion:reduce){#controls{transition:none}}
+
+/* 準備中画面の「今日は何の日？」 */
+.today{position:absolute;left:50%;transform:translateX(-50%);width:min(92vw,1700px);max-height:calc(100vh - 20px);overflow:hidden;
+  background:rgba(255,255,255,.9);color:#111;border-radius:12px;padding:.5em .9em .4em;line-height:1.45;z-index:4;
+  box-shadow:0 2px 12px rgba(0,0,0,.25)}
+.todayTitle{font-weight:700;font-size:1.15em;color:#1c3f94;margin-bottom:.15em}
+.todayCols{display:flex;gap:1.2em}
+.todayCols > div{flex:1 1 0;min-width:0}
+.todayHead{font-weight:700;font-size:.8em;color:#b34a00;border-bottom:2px solid #f07c14;margin-bottom:.15em}
+.today ul{margin:0;padding-left:1.1em}
+.today li{margin:.05em 0}
+.todaySrc{font-size:.45em;color:#555;text-align:right;margin-top:.2em}

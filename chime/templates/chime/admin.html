@@ -15,6 +15,7 @@
 <body>
 <script type="application/json" id="planData">{{ plan_json|safe }}</script>
 <script type="application/json" id="chimeData">{{ chime_json|safe }}</script>
+<script type="application/json" id="todayData">{{ today_json|safe }}</script>
 <script type="application/json" id="mediaData">{{ media_json|safe }}</script>
 <!-- 素材の置き場所（URL） -->
 <script type="application/json" id="mediaBase">{{ (url_for('chime.media', name='x')[:-1])|tojson }}</script>
@@ -62,11 +63,36 @@
     {% endif %}
   </section>
 
+  <section class="step">
+    <h2><span class="n">2</span>今日は何の日？（Wikipedia から自動取得）</h2>
+    <p class="hint">準備中画面の下半分に、日本語版 Wikipedia の日付ページ（例：「11月16日」）から、記念日・年中行事と、IT・コンピュータに関係するできごとを表示します。
+      サーバーが取得して保存し、1度取得した日は30日間そのまま使います。表示の有無・大きさ・位置は下の「基本設定」で変えられます。</p>
+    {% if today is none %}
+      <p>「基本設定」で表示しない設定になっています。</p>
+    {% else %}
+      <p><strong>{{ today.title }}</strong>
+        {% if today.fetched %}（{{ today.fetched }} 取得）{% endif %}</p>
+      {% if today.error %}<div class="msg notice">取得できませんでした：{{ today.error }}<br>
+        サーバーからインターネット（ja.wikipedia.org）に接続できるか確認してください。</div>{% endif %}
+      <div class="grid2">
+        <div><h3>記念日・年中行事</h3>
+          {% if today.anniversaries %}<ul>{% for a in today.anniversaries %}<li>{{ a }}</li>{% endfor %}</ul>
+          {% else %}<p class="hint">ありません</p>{% endif %}</div>
+        <div><h3>IT・コンピュータのできごと</h3>
+          {% if today.it_events %}<ul>{% for e in today.it_events %}<li>{{ e.year }}年　{{ e.text }}</li>{% endfor %}</ul>
+          {% else %}<p class="hint">この日は見つかりませんでした（記念日だけを表示します）</p>{% endif %}</div>
+      </div>
+      <form method="post" action="{{ url_for('chime.admin_today_refresh') }}" class="row gap-y" id="todayForm">
+        <button type="submit" class="fixed">今日の分を取り直す</button>
+      </form>
+    {% endif %}
+  </section>
+
   <form method="post" action="{{ url_for('chime.admin') }}" id="saveForm">
   <input type="hidden" name="chime" id="chimeField">
 
   <section class="step">
-    <h2><span class="n">2</span>基本設定</h2>
+    <h2><span class="n">3</span>基本設定</h2>
     <div class="grid2">
       <div><label for="chimeSound">チャイム音</label><select id="chimeSound" data-media="audio" data-none="（標準の電子音）"></select></div>
       <div class="row"><div><label for="bgcolor">背景色</label><input type="color" id="bgcolor"></div>
@@ -91,6 +117,13 @@
           </select></div>
         <div><label for="imgH">画像の高さ（px・空欄＝画面に合わせる）</label><input type="number" id="imgH" min="1"></div>
       </div>
+      <h3>準備中画面の「今日は何の日？」</h3>
+      <div class="grid4">
+        <div><label class="chk"><input type="checkbox" id="todayOn">表示する</label></div>
+        <div><label for="todaySize">文字の大きさ（px）</label><input type="number" id="todaySize" min="10" max="120"></div>
+        <div><label for="todayTop">表示位置（上端から％）</label><input type="number" id="todayTop" min="10" max="90"></div>
+        <div><p class="hint">ツールの欄と重なるときは、ツールの位置か、この表示位置を変えて「テスト実行」で確かめてください。</p></div>
+      </div>
       <h3>準備中画面の「テキスト」「ツール」</h3>
       <div class="grid4">
         <div><label for="textSize">テキストの大きさ（px）</label><input type="number" id="textSize" min="8" max="300"></div>
@@ -106,7 +139,7 @@
   </section>
 
   <section class="step">
-    <h2><span class="n">3</span>チャイム時刻</h2>
+    <h2><span class="n">4</span>チャイム時刻</h2>
     <p class="hint">時刻になるとチャイムが鳴り、表示文字・画像・BGMに切り替わります。最初の時刻より前は「準備中画面」です。
       BGMは次の時刻の2秒前からフェードアウトします。</p>
     <p class="hint" id="ttNote"></p>
@@ -126,20 +159,20 @@
   </section>
 
   <section class="step">
-    <h2><span class="n">4</span>準備中画面の「テキスト」「ツール」（科目ごと）</h2>
+    <h2><span class="n">5</span>準備中画面の「テキスト」「ツール」（科目ごと）</h2>
     <p class="hint">日別計画表の訓練内容から番号（①②…）と「（実技）」「（学科）」を外した単位でまとめています。ここに入れた内容が、その科目の全日に表示されます。</p>
     <div class="scroll"><table class="mx plan" id="subjTable"></table></div>
   </section>
 
   <section class="step">
-    <h2><span class="n">5</span>日ごとの上書き</h2>
+    <h2><span class="n">6</span>日ごとの上書き</h2>
     <p class="hint">特定の日だけ変えたいときに入力します。空欄の日は、科目ごとの設定（薄い文字）が表示されます。</p>
     <label class="chk"><input type="checkbox" id="showPast">過ぎた日も表示する</label>
     <div class="scroll"><table class="mx plan" id="dayTable"></table></div>
   </section>
 
   <section class="step">
-    <h2><span class="n">6</span>手動切替の項目（デスクトップ版の「表示設定.txt」）</h2>
+    <h2><span class="n">7</span>手動切替の項目（デスクトップ版の「表示設定.txt」）</h2>
     <p class="hint">チャイム表示画面の「手動切替」から選んで表示できる項目です（例：小テスト中、休講、避難訓練）。</p>
     <div class="row gap-y"><button type="button" id="addDisp" class="fixed">行を追加</button></div>
     <div class="scroll"><table class="mx plan" id="dispTable"></table></div>
@@ -151,6 +184,7 @@
     <div id="tsCenter" class="tsCenter" hidden></div>
     <div id="tsTop" class="tsSlot" hidden></div>
     <div id="tsBtm" class="tsSlot" hidden></div>
+    <div id="tsToday" class="today" hidden></div>
     <div id="tsClock" class="tsClock"><div id="tsDate"></div><div id="tsTime"></div><div id="tsNext"></div></div>
     <div class="tsBar"><span id="tsLabel"></span><button type="button" id="tsStop">停止</button></div>
   </div>

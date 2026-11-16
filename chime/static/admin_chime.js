@@ -3,7 +3,7 @@
  * 画面で編集した内容を JSON にまとめ、「設定を保存する」でフォーム送信する（それ以外の通信はしない）
  */
 import { subjectKey, isTrainingDay, defaultSchedule, todayIso, readJson, infoFor,
-  applyStage, showPicture, showCenter, showSlots } from "./chime_common.js";
+  applyStage, showPicture, showCenter, showSlots, showToday } from "./chime_common.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -12,6 +12,7 @@ const WD = ["日", "月", "火", "水", "木", "金", "土"];
 const plan = readJson("planData", { days: [], timetable: [] });
 const cfg = readJson("chimeData", {});
 const media = readJson("mediaData", []);
+const todayData = readJson("todayData", null);  // 今日の「今日は何の日？」（テスト実行で使う）
 const style = cfg.style || {};
 const days = (plan.days || []).filter(isTrainingDay);
 
@@ -51,6 +52,8 @@ function initBasic() {
   $("textColor").value = hex(style.text_color, "#ffffff"); $("toolColor").value = hex(style.tool_color, "#ffffff");
   $("textBg").value = hex(style.text_bg, "#2c3e50"); $("toolBg").value = hex(style.tool_bg, "#c0392b");
   $("textY").value = style.text_y ?? 300; $("toolY").value = style.tool_y ?? 300;
+  $("todayOn").checked = style.today_enabled !== false;
+  $("todaySize").value = style.today_size ?? 34; $("todayTop").value = style.today_top ?? 55;
   $("planNote").textContent = plan.days && plan.days.length
     ? `登録済みの日別計画表：${plan.days[0].iso}〜${plan.days[plan.days.length - 1].iso}（訓練日 ${days.length} 日）`
     : "日別計画表がまだ登録されていません。登録されるまでは毎日チャイムが鳴ります。";
@@ -181,6 +184,7 @@ function collect() {
       text_color: $("textColor").value, tool_color: $("toolColor").value,
       text_bg: $("textBg").value, tool_bg: $("toolBg").value,
       text_y: num("textY"), tool_y: num("toolY"),
+      today_enabled: $("todayOn").checked, today_size: num("todaySize"), today_top: num("todayTop"),
     },
     schedule, subjects, days: dayOver, displays,
   };
@@ -230,8 +234,10 @@ function runTest() {
       showPicture($("tsPicture"), data.standby_image, st);
       showCenter($("tsCenter"), "");
       showSlots($("tsTop"), $("tsBtm"), info, st, true);
+      showToday($("tsToday"), todayData, st, true);
     } else {
       showSlots($("tsTop"), $("tsBtm"), info, st, false);
+      showToday($("tsToday"), todayData, st, false);
       showPicture($("tsPicture"), s.e.image, st);
       showCenter($("tsCenter"), s.e.text, s.e.color, s.e.size);
     }
@@ -249,6 +255,10 @@ document.querySelectorAll("form.delForm").forEach((f) => f.addEventListener("sub
   if (!confirm(`「${f.elements.name.value}」を削除します。よろしいですか？`)) e.preventDefault();
   else dirty = false;
 }));
+$("todayForm")?.addEventListener("submit", (e) => {
+  if (dirty && !confirm("保存していない設定の変更は消えます。取り直しますか？")) e.preventDefault();
+  else dirty = false;
+});
 $("uploadForm").addEventListener("submit", (e) => {
   if (dirty && !confirm("保存していない設定の変更は消えます。アップロードしますか？")) e.preventDefault();
   else dirty = false;
