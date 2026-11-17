@@ -6,6 +6,9 @@
   <meta name="robots" content="noindex">
   <title>チャイムの設定（講師用）</title>
 {% include "_icons.html" %}
+  <!-- アプリとしてインストールするための情報 -->
+  <link rel="manifest" href="{{ url_for('chime.manifest') }}">
+  <meta name="theme-color" content="#1c3f94">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap">
@@ -34,8 +37,40 @@
     <a class="adminLink" href="{{ url_for('index') }}">トップページへ</a>
   </nav>
 
+  <section class="step" id="installBox">
+    <h2><span class="n">1</span>教室のPCにインストール（アプリとして使う）</h2>
+    <p class="hint">チャイムを Edge の「アプリ」としてインストールすると、クラスロゴのアイコンで、アドレスバーやタブのない専用のウィンドウで開きます。
+      タスクバーは残り、タスクバーへのピン留めもできます。<strong>教室のPCで、この画面を Edge で開いて</strong>操作してください。</p>
+
+    <div class="msg" id="installState"></div>
+    <div class="row gap-y">
+      <button type="button" id="installBtn" class="primary fixed" hidden>アプリとしてインストール</button>
+    </div>
+    <p class="hint" id="installManual">ボタンが表示されないときは、Edge の右上の「…」→「アプリ」→「このサイトをアプリとしてインストール」を選んでください
+      （名前は「チャイム」のままで「インストール」）。</p>
+
+    <h3>インストールのあとに（PCごとに1回）</h3>
+    <ol class="steps">
+      <li><strong>クリックしなくても音が鳴るようにする</strong>：Edge のアドレスバーに次のアドレスを貼り付けて開き、
+        「許可」の「追加」に <code>{{ request.host_url.rstrip('/') }}</code> を入れます。
+        <span class="copyRow"><code id="cpAutoplay">edge://settings/content/mediaAutoplay</code>
+          <button type="button" class="copyBtn" data-copy="cpAutoplay">コピー</button></span>
+        <span class="copyRow"><code id="cpSite">{{ request.host_url.rstrip('/') }}</code>
+          <button type="button" class="copyBtn" data-copy="cpSite">コピー</button></span>
+        設定しない場合は、アプリを開くたびに「チャイムを開始する」をクリックします。</li>
+      <li><strong>タスクバーにピン留め</strong>：インストールの直後に出る画面で「タスクバーにピン留めする」にチェックを入れます
+        （あとからでも、起動中のアイコンを右クリック →「タスクバーにピン留めする」）。アイコンはクラスロゴのままです。</li>
+      <li><strong>ログイン時に自動で起動する（必要なら）</strong>：次のアドレスを開き、「チャイム」の「…」→「デバイスのログイン時に自動起動」を選びます。
+        <span class="copyRow"><code id="cpApps">edge://apps</code>
+          <button type="button" class="copyBtn" data-copy="cpApps">コピー</button></span></li>
+      <li><strong>画面いっぱいにする</strong>：初めて開いたときにウィンドウを最大化します（次からは最大化した状態で開きます）。</li>
+    </ol>
+    <p class="hint">アンインストールは、アプリのウィンドウ右上の「…」→「アプリの設定」→「アンインストール」、または上の <code>edge://apps</code> から行います。
+      以前の起動用ファイル（start_chime.bat）やショートカットは、アプリを使う場合は不要です。</p>
+  </section>
+
   <section class="step">
-    <h2><span class="n">1</span>素材（チャイム音・画像・BGM）</h2>
+    <h2><span class="n">2</span>素材（チャイム音・画像・BGM）</h2>
     <p class="hint">アップロードした素材は下の設定で選べます。同じ名前のファイルをアップロードすると差し替えになります。
       画像：png / jpg / gif / webp、音声：mp3 / wav / ogg / m4a（1ファイル30MBまで）。<br>
       <strong>アップロード・削除をするとページが読み込み直されます。設定を変更中のときは、先に「設定を保存する」を押してください。</strong></p>
@@ -65,7 +100,7 @@
   </section>
 
   <section class="step">
-    <h2><span class="n">2</span>今日は何の日？（Wikipedia から自動取得）</h2>
+    <h2><span class="n">3</span>今日は何の日？（Wikipedia から自動取得）</h2>
     <p class="hint">準備中画面の下半分に、日本語版 Wikipedia の日付ページ（例：「11月16日」）から、記念日・年中行事と、IT・コンピュータに関係するできごとを表示します。
       サーバーが取得して保存し、1度取得した日は30日間そのまま使います。表示の有無・大きさ・位置は下の「基本設定」で変えられます。</p>
     {% if today is none %}
@@ -90,7 +125,7 @@
   </section>
 
   <section class="step">
-    <h2><span class="n">3</span>休憩中のニュース（Java・Python）</h2>
+    <h2><span class="n">4</span>休憩中のニュース（Java・Python）</h2>
     <p class="hint">チャイム時刻の「表示文字」に「{{ (cfg_news.triggers or ['休憩'])|join('」「') }}」を含む時刻の画面で、下半分に Java・Python 関連のニュースを表示します。
       サーバーが下の「基本設定」の取得元（RSS / Atom）から取得し、3時間ごとに新しくします（表示画面は日付が変わると読み込み直します）。</p>
     {% if news is none %}
@@ -111,7 +146,7 @@
   <input type="hidden" name="chime" id="chimeField">
 
   <section class="step">
-    <h2><span class="n">4</span>基本設定</h2>
+    <h2><span class="n">5</span>基本設定</h2>
     <div class="grid2">
       <div><label for="chimeSound">チャイム音</label><select id="chimeSound" data-media="audio" data-none="（標準の電子音）"></select></div>
       <div class="row"><div><label for="bgcolor">背景色</label><input type="color" id="bgcolor"></div>
@@ -175,7 +210,7 @@
   </section>
 
   <section class="step">
-    <h2><span class="n">5</span>チャイム時刻</h2>
+    <h2><span class="n">6</span>チャイム時刻</h2>
     <p class="hint">時刻になるとチャイムが鳴り、表示文字・画像・BGMに切り替わります。最初の時刻より前は「準備中画面」です。
       BGMは次の時刻の2秒前からフェードアウトします。</p>
     <p class="hint" id="ttNote"></p>
@@ -195,20 +230,20 @@
   </section>
 
   <section class="step">
-    <h2><span class="n">6</span>準備中画面の「テキスト」「ツール」（科目ごと）</h2>
+    <h2><span class="n">7</span>準備中画面の「テキスト」「ツール」（科目ごと）</h2>
     <p class="hint">日別計画表の訓練内容から番号（①②…）と「（実技）」「（学科）」を外した単位でまとめています。ここに入れた内容が、その科目の全日に表示されます。</p>
     <div class="scroll"><table class="mx plan" id="subjTable"></table></div>
   </section>
 
   <section class="step">
-    <h2><span class="n">7</span>日ごとの上書き</h2>
+    <h2><span class="n">8</span>日ごとの上書き</h2>
     <p class="hint">特定の日だけ変えたいときに入力します。空欄の日は、科目ごとの設定（薄い文字）が表示されます。</p>
     <label class="chk"><input type="checkbox" id="showPast">過ぎた日も表示する</label>
     <div class="scroll"><table class="mx plan" id="dayTable"></table></div>
   </section>
 
   <section class="step">
-    <h2><span class="n">8</span>手動切替の項目（デスクトップ版の「表示設定.txt」）</h2>
+    <h2><span class="n">9</span>手動切替の項目（デスクトップ版の「表示設定.txt」）</h2>
     <p class="hint">チャイム表示画面の「手動切替」から選んで表示できる項目です（例：小テスト中、休講、避難訓練）。</p>
     <div class="row gap-y"><button type="button" id="addDisp" class="fixed">行を追加</button></div>
     <div class="scroll"><table class="mx plan" id="dispTable"></table></div>

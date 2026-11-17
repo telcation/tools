@@ -8,7 +8,7 @@
 import json
 from datetime import date
 
-from flask import Blueprint, redirect, render_template, request, send_from_directory, url_for
+from flask import Blueprint, Response, redirect, render_template, request, send_from_directory, url_for
 
 import core
 from .store import Store
@@ -42,6 +42,30 @@ def index():
     return render_template("chime/chime.html", plan_json=core.plan_json_for_page(),
                            chime_json=core.to_page_json(STORE.load()), today_json=core.to_page_json(today_data()),
                            news_json=core.to_page_json(news_data()))
+
+
+@bp.route("/manifest.webmanifest")
+def manifest():
+    """アプリとしてインストールするための情報（名前・アイコン・開く画面）。/tools/ の下でも手元でも正しいURLになるよう url_for で作る"""
+    start = url_for("chime.index")
+    data = {
+        "id": start,
+        "name": "チャイム",
+        "short_name": "チャイム",
+        "description": "教室のPCで表示する時計とチャイム（授業用ツール）",
+        "lang": "ja",
+        "start_url": start,
+        "scope": start,
+        "display": "standalone",  # アドレスバー・タブのない専用ウィンドウ（タスクバーは残る）
+        "background_color": "#000000",
+        "theme_color": "#1c3f94",
+        "icons": [
+            {"src": url_for("static", filename="icon-192.png"), "sizes": "192x192", "type": "image/png", "purpose": "any"},
+            {"src": url_for("static", filename="icon-512.png"), "sizes": "512x512", "type": "image/png", "purpose": "any"},
+        ],
+    }
+    return Response(json.dumps(data, ensure_ascii=False), mimetype="application/manifest+json",
+                    headers={"Cache-Control": "no-cache"})
 
 
 @bp.route("/media/<path:name>")

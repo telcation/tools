@@ -302,3 +302,46 @@ $("uploadForm").addEventListener("submit", (e) => {
 });
 
 initBasic(); renderSched(); renderSubj(); renderDays(); renderDisp();
+
+// ---------- 教室のPCにインストール（アプリとして使う） ----------
+let installEvent = null;
+const standalone = () => window.matchMedia("(display-mode: standalone)").matches;
+function installStatus(msg) { $("installState").textContent = msg; }
+if (standalone()) {
+  installStatus("このウィンドウは、インストールしたアプリとして開いています。");
+} else {
+  installStatus("このブラウザではまだインストールしていないか、インストールできるか確認中です。");
+}
+// インストールできるブラウザ（Edge / Chrome）では、この合図が来たらボタンを出す
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  installEvent = e;
+  $("installBtn").hidden = false;
+  installStatus("このPCにインストールできます。「アプリとしてインストール」を押してください。");
+});
+$("installBtn").addEventListener("click", async () => {
+  if (!installEvent) return;
+  installEvent.prompt();
+  const { outcome } = await installEvent.userChoice;
+  installEvent = null;
+  $("installBtn").hidden = true;
+  installStatus(outcome === "accepted" ? "インストールしました。下の「インストールのあとに」を設定してください。"
+                                       : "インストールを取りやめました。もう一度行うときは、このページを読み込み直してください。");
+});
+window.addEventListener("appinstalled", () => {
+  $("installBtn").hidden = true;
+  installStatus("インストールしました。下の「インストールのあとに」を設定してください。");
+});
+// しばらく合図が来ない：インストール済みか、インストールできないブラウザ
+setTimeout(() => {
+  if (!installEvent && !standalone()) {
+    installStatus("このPCにはインストール済みか、このブラウザではボタンからインストールできません。インストール済みなら、スタートメニューやタスクバーの「チャイム」から開けます。");
+  }
+}, 4000);
+// アドレスのコピー（edge:// のアドレスはページから直接開けないため、コピーして貼り付けてもらう）
+document.querySelectorAll(".copyBtn").forEach((b) => b.addEventListener("click", async () => {
+  const text = $(b.dataset.copy).textContent.trim();
+  try { await navigator.clipboard.writeText(text); b.textContent = "コピーしました"; }
+  catch (_) { window.getSelection().selectAllChildren($(b.dataset.copy)); b.textContent = "選択しました（Ctrl+C）"; }
+  setTimeout(() => { b.textContent = "コピー"; }, 2000);
+}));

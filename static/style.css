@@ -190,3 +190,9 @@ h1.brand img{width:48px;height:48px}
 .newsList li{margin:.12em 0}
 .newsMeta{font-size:.62em;color:#555;white-space:nowrap}
 .hasNews .tsCenter{top:30%}
+/* ===== チャイム設定：インストール手順 ===== */
+ol.steps{padding-left:1.4em;margin:6px 0}
+ol.steps li{margin:8px 0}
+.copyRow{display:flex;align-items:center;gap:8px;margin:4px 0;flex-wrap:wrap}
+.copyRow code{background:var(--soft);padding:3px 8px;border-radius:4px;word-break:break-all}
+.copyBtn{padding:3px 10px;font-size:.88rem}
