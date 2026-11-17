@@ -151,4 +151,35 @@ export function showToday(el, data, style, on) {
   src.className = "todaySrc";
   src.textContent = `出典：Wikipedia「${data.title || ""}」（CC BY-SA）`;
   el.append(src);
+  fitToday(el, style);
+  // 画面の大きさが変わったとき（最大化・全画面の切り替えなど）も収まるように合わせ直す
+  if (!el.dataset.fitBound) {
+    el.dataset.fitBound = "1";
+    window.addEventListener("resize", () => { if (!el.hidden && el.__style) fitToday(el, el.__style); });
+  }
+}
+
+// 画面の下端（下の帯・ボタンの分は空ける）に収まるまで、文字を小さくする（設定の大きさの40%まで）。
+// それでも入らないときは、項目を後ろから減らす
+const TODAY_BOTTOM_GAP = 56;
+function fitToday(el, style) {
+  el.__style = style;
+  const base = style.today_size ?? 34;
+  const avail = () => window.innerHeight - el.getBoundingClientRect().top - TODAY_BOTTOM_GAP;
+  el.querySelectorAll("li[data-cut]").forEach((li) => { li.hidden = false; delete li.dataset.cut; });
+  let size = base;
+  el.style.fontSize = `${size}px`;
+  while (el.scrollHeight > avail() && size > Math.max(12, base * 0.4)) {
+    size -= 1;
+    el.style.fontSize = `${size}px`;
+  }
+  // まだはみ出すとき：いちばん項目の多い列から1件ずつ隠す
+  let guard = 20;
+  while (el.scrollHeight > avail() && guard-- > 0) {
+    const lists = [...el.querySelectorAll("ul")].map((ul) => [...ul.querySelectorAll("li:not([hidden])")]);
+    const longest = lists.sort((a, b) => b.length - a.length)[0];
+    if (!longest || longest.length <= 1) break;
+    const li = longest[longest.length - 1];
+    li.hidden = true; li.dataset.cut = "1";
+  }
 }
