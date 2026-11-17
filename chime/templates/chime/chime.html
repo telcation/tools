@@ -17,6 +17,7 @@
 <script type="application/json" id="planData">{{ plan_json|safe }}</script>
 <script type="application/json" id="chimeData">{{ chime_json|safe }}</script>
 <script type="application/json" id="todayData">{{ today_json|safe }}</script>
+<script type="application/json" id="newsData">{{ news_json|safe }}</script>
 <script type="application/json" id="mediaBase">{{ (url_for('chime.media', name='x')[:-1])|tojson }}</script>
 
 <div id="stage">
@@ -25,6 +26,7 @@
   <div id="slotTop" class="slot" hidden></div>
   <div id="slotBtm" class="slot" hidden></div>
   <div id="today" class="today" hidden></div>
+  <div id="news" class="today" hidden></div>
 
   <div id="clock">
     <div id="date"></div>

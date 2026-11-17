@@ -51,3 +51,9 @@ html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#fff;
 .today ul{margin:0;padding-left:1.1em}
 .today li{margin:.05em 0}
 .todaySrc{font-size:.45em;color:#555;text-align:right;margin-top:.2em}
+
+/* 休憩中の「Java・Python のニュース」（見た目は「今日は何の日？」と共通） */
+.newsList{margin:.1em 0 0;padding-left:1.1em}
+.newsList li{margin:.12em 0}
+.newsMeta{font-size:.62em;color:#555;white-space:nowrap}
+.hasNews #center{top:30%}

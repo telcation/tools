@@ -3,7 +3,7 @@
  * 画面で編集した内容を JSON にまとめ、「設定を保存する」でフォーム送信する（それ以外の通信はしない）
  */
 import { subjectKey, isTrainingDay, defaultSchedule, todayIso, readJson, infoFor,
-  applyStage, showPicture, showCenter, showSlots, showToday } from "./chime_common.js";
+  applyStage, showPicture, showCenter, showSlots, showToday, showNews, isNewsTime } from "./chime_common.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -13,6 +13,7 @@ const plan = readJson("planData", { days: [], timetable: [] });
 const cfg = readJson("chimeData", {});
 const media = readJson("mediaData", []);
 const todayData = readJson("todayData", null);  // 今日の「今日は何の日？」（テスト実行で使う）
+const newsData = readJson("newsData", null);    // 取得済みのニュース（テスト実行で使う）
 const style = cfg.style || {};
 const days = (plan.days || []).filter(isTrainingDay);
 
@@ -54,6 +55,13 @@ function initBasic() {
   $("textY").value = style.text_y ?? 300; $("toolY").value = style.tool_y ?? 300;
   $("todayOn").checked = style.today_enabled !== false;
   $("todaySize").value = style.today_size ?? 34; $("todayTop").value = style.today_top ?? 55;
+  const nw = cfg.news || {};
+  $("newsOn").checked = nw.enabled !== false;
+  $("newsMax").value = nw.max ?? 5; $("newsSize").value = nw.size ?? 34; $("newsTop").value = nw.top ?? 55;
+  $("newsTriggers").value = (nw.triggers || ["休憩"]).join("\n");
+  $("newsWords").value = (nw.words || []).join("\n");
+  $("newsFeeds").value = (nw.feeds || []).join("\n");
+  $("newsExclude").value = (nw.exclude || []).join("\n");
   $("planNote").textContent = plan.days && plan.days.length
     ? `登録済みの日別計画表：${plan.days[0].iso}〜${plan.days[plan.days.length - 1].iso}（訓練日 ${days.length} 日）`
     : "日別計画表がまだ登録されていません。登録されるまでは毎日チャイムが鳴ります。";
@@ -173,6 +181,7 @@ document.querySelectorAll("#saveForm section:nth-of-type(1) input, #saveForm sec
 // 画面の入力内容（保存前も含む）を、保存する形にまとめる
 function collect() {
   const num = (id) => ($(id).value === "" ? null : Number($(id).value));
+  const lines = (id) => $(id).value.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
   return {
     chime_sound: $("chimeSound").value, standby_image: $("standbyImage").value, standby_bgm: $("standbyBgm").value,
     training_days_only: $("trainingOnly").checked,
@@ -185,6 +194,10 @@ function collect() {
       text_bg: $("textBg").value, tool_bg: $("toolBg").value,
       text_y: num("textY"), tool_y: num("toolY"),
       today_enabled: $("todayOn").checked, today_size: num("todaySize"), today_top: num("todayTop"),
+    },
+    news: {
+      enabled: $("newsOn").checked, max: num("newsMax"), size: num("newsSize"), top: num("newsTop"),
+      triggers: lines("newsTriggers"), words: lines("newsWords"), feeds: lines("newsFeeds"), exclude: lines("newsExclude"),
     },
     schedule, subjects, days: dayOver, displays,
   };
@@ -219,7 +232,7 @@ function runTest() {
   const sample = days.find((d) => d.iso === ti) || days.find((d) => d.iso > ti) || days[0] || null;
   const info = infoFor(data, sample);
   const steps = [{ kind: "standby", label: "準備中画面（最初の時刻より前）" + (sample ? `　例：${label(sample.iso)} ${subjectKey(sample.content)}` : "") }]
-    .concat(rows.map((e) => ({ kind: "entry", e, label: `${e.time}　${e.text || "（文字なし）"}${e.chime !== false ? "" : "（音なし）"}` })));
+    .concat(rows.map((e) => ({ kind: "entry", e, label: `${e.time}　${e.text || "（文字なし）"}${e.chime !== false ? "" : "（音なし）"}${isNewsTime(e.text, data.news) ? "（ニュース表示）" : ""}` })));
   applyStage({ stage: $("testStage"), clock: $("tsClock"), next: $("tsNext") }, st);
   const d = new Date();
   $("tsDate").textContent = `${d.getFullYear()}（令和${d.getFullYear() - 2018}）年${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）`;
@@ -236,9 +249,11 @@ function runTest() {
       showCenter($("tsCenter"), "");
       showSlots($("tsTop"), $("tsBtm"), info, st, true);
       showToday($("tsToday"), todayData, st, true);
+      showNews($("tsNews"), newsData, data.news, false);
     } else {
       showSlots($("tsTop"), $("tsBtm"), info, st, false);
       showToday($("tsToday"), todayData, st, false);
+      showNews($("tsNews"), newsData, data.news, isNewsTime(s.e.text, data.news));
       showPicture($("tsPicture"), s.e.image, st);
       showCenter($("tsCenter"), s.e.text, s.e.color, s.e.size);
     }
@@ -273,6 +288,10 @@ document.querySelectorAll("form.delForm").forEach((f) => f.addEventListener("sub
   if (!confirm(`「${f.elements.name.value}」を削除します。よろしいですか？`)) e.preventDefault();
   else dirty = false;
 }));
+$("newsForm")?.addEventListener("submit", (e) => {
+  if (dirty && !confirm("保存していない設定の変更は消えます。取り直しますか？")) e.preventDefault();
+  else dirty = false;
+});
 $("todayForm")?.addEventListener("submit", (e) => {
   if (dirty && !confirm("保存していない設定の変更は消えます。取り直しますか？")) e.preventDefault();
   else dirty = false;

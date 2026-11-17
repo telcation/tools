@@ -184,3 +184,9 @@ h1.brand img{width:48px;height:48px}
 .testStage{cursor:pointer;outline:none}
 .tsBtns{display:flex;align-items:center;gap:8px;font-weight:400}
 .tsBar button:disabled{opacity:.45}
+
+/* 休憩中の「Java・Python のニュース」（見た目は「今日は何の日？」と共通） */
+.newsList{margin:.1em 0 0;padding-left:1.1em}
+.newsList li{margin:.12em 0}
+.newsMeta{font-size:.62em;color:#555;white-space:nowrap}
+.hasNews .tsCenter{top:30%}

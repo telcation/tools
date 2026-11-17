@@ -7,7 +7,8 @@
  * データはページに埋め込まれているので通信はしない。日付が変わったらページを読み込み直して最新の設定にする。
  */
 import { isTrainingDay, defaultSchedule, infoFor, todayIso, mediaUrl, readJson,
-  applyStage, showPicture as drawPicture, showCenter as drawCenter, showSlots as drawSlots, showToday as drawToday } from "./chime_common.js";
+  applyStage, showPicture as drawPicture, showCenter as drawCenter, showSlots as drawSlots, showToday as drawToday,
+  showNews as drawNews, isNewsTime } from "./chime_common.js";
 
 const $ = (id) => document.getElementById(id);
 const WD = ["日", "月", "火", "水", "木", "金", "土"];
@@ -38,6 +39,9 @@ applyStage({ stage: $("stage"), clock: $("clock"), next: $("next"), status: $("s
 const showPicture = (name) => drawPicture($("picture"), name, style);
 const showCenter = (text, color, size) => drawCenter($("center"), text, color, size);
 const todayInfo = readJson("todayData", null);
+const newsInfo = readJson("newsData", null);
+// 「休憩」など、設定の語を含む表示のときだけニュースを出す（それ以外の画面では消す）
+const showNewsFor = (text) => drawNews($("news"), newsInfo, cfg.news, isNewsTime(text, cfg.news));
 const showSlots = (on) => {
   drawSlots($("slotTop"), $("slotBtm"), info, style, on);
   drawToday($("today"), todayInfo, style, on);  // 「今日は何の日？」も準備中画面だけに出す
@@ -104,6 +108,7 @@ function currentEntry(hhmm) {
   return cur;
 }
 function showStandby(withSound) {
+  showNewsFor("");
   showPicture(cfg.standby_image);
   showCenter("");
   showSlots(active);
@@ -112,6 +117,7 @@ function showStandby(withSound) {
 }
 function showEntry(e) {
   showSlots(false);
+  showNewsFor(e.text);
   showPicture(e.image);
   showCenter(e.text, e.color, e.size);
 }
@@ -171,7 +177,7 @@ function openManual() {
       list.append(b);
     });
   };
-  add("手動切替の項目", (cfg.displays || []).map((e) => [`${e.label}　${e.text || ""}`, () => { showSlots(false); showPicture(e.image); showCenter(e.text, e.color, e.size); }]));
+  add("手動切替の項目", (cfg.displays || []).map((e) => [`${e.label}　${e.text || ""}`, () => { showSlots(false); showNewsFor(""); showPicture(e.image); showCenter(e.text, e.color, e.size); }]));
   add("準備中画面", [["準備中画面", () => showStandby(false)]]);
   add("スケジュール", schedule.map((e) => [`${e.time}　${e.text || "（文字なし）"}`, () => showEntry(e)]));
   $("manual").showModal();

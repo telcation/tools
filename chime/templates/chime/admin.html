@@ -16,6 +16,7 @@
 <script type="application/json" id="planData">{{ plan_json|safe }}</script>
 <script type="application/json" id="chimeData">{{ chime_json|safe }}</script>
 <script type="application/json" id="todayData">{{ today_json|safe }}</script>
+<script type="application/json" id="newsData">{{ news_json|safe }}</script>
 <script type="application/json" id="mediaData">{{ media_json|safe }}</script>
 <!-- 素材の置き場所（URL） -->
 <script type="application/json" id="mediaBase">{{ (url_for('chime.media', name='x')[:-1])|tojson }}</script>
@@ -88,11 +89,29 @@
     {% endif %}
   </section>
 
+  <section class="step">
+    <h2><span class="n">3</span>休憩中のニュース（Java・Python）</h2>
+    <p class="hint">チャイム時刻の「表示文字」に「{{ (cfg_news.triggers or ['休憩'])|join('」「') }}」を含む時刻の画面で、下半分に Java・Python 関連のニュースを表示します。
+      サーバーが下の「基本設定」の取得元（RSS / Atom）から取得し、3時間ごとに新しくします（表示画面は日付が変わると読み込み直します）。</p>
+    {% if news is none %}
+      <p>「基本設定」で表示しない設定になっているか、取得元がありません。</p>
+    {% else %}
+      <p>{% if news.fetched %}{{ news.fetched }} 取得　{% endif %}{{ news['items']|length }} 件</p>
+      {% if news.errors %}<div class="msg notice">取得できなかった取得元があります：{{ news.errors|join('／') }}<br>
+        サーバーからインターネットに接続できるか、取得元の URL が正しいか確認してください。</div>{% endif %}
+      {% if news['items'] %}<ul>{% for n in news['items'][:cfg_news.max] %}<li>{{ n.title }}　<span class="hint">{{ n.source }} {{ n.date }}</span></li>{% endfor %}</ul>
+      {% else %}<p class="hint">表示できるニュースはまだありません。</p>{% endif %}
+      <form method="post" action="{{ url_for('chime.admin_news_refresh') }}" class="row gap-y" id="newsForm">
+        <button type="submit" class="fixed">ニュースを取り直す</button>
+      </form>
+    {% endif %}
+  </section>
+
   <form method="post" action="{{ url_for('chime.admin') }}" id="saveForm">
   <input type="hidden" name="chime" id="chimeField">
 
   <section class="step">
-    <h2><span class="n">3</span>基本設定</h2>
+    <h2><span class="n">4</span>基本設定</h2>
     <div class="grid2">
       <div><label for="chimeSound">チャイム音</label><select id="chimeSound" data-media="audio" data-none="（標準の電子音）"></select></div>
       <div class="row"><div><label for="bgcolor">背景色</label><input type="color" id="bgcolor"></div>
@@ -124,6 +143,23 @@
         <div><label for="todayTop">表示位置（上端から％）</label><input type="number" id="todayTop" min="10" max="90"></div>
         <div><p class="hint">ツールの欄と重なるときは、ツールの位置か、この表示位置を変えて「テスト実行」で確かめてください。</p></div>
       </div>
+      <h3>休憩中のニュース（Java・Python）</h3>
+      <div class="grid4">
+        <div><label class="chk"><input type="checkbox" id="newsOn">表示する</label></div>
+        <div><label for="newsMax">件数</label><input type="number" id="newsMax" min="1" max="10"></div>
+        <div><label for="newsSize">文字の大きさ（px）</label><input type="number" id="newsSize" min="10" max="120"></div>
+        <div><label for="newsTop">表示位置（上端から％）</label><input type="number" id="newsTop" min="10" max="90"></div>
+      </div>
+      <div class="grid2">
+        <div><label for="newsTriggers">ニュースを出す時刻の「表示文字」に含まれる語（1行に1つ）</label>
+          <textarea id="newsTriggers" class="short" placeholder="休憩"></textarea></div>
+        <div><label for="newsWords">ニュースを選ぶ語句（タイトルに含むもの・1行に1つ）</label>
+          <textarea id="newsWords" class="short"></textarea></div>
+        <div><label for="newsFeeds">取得元（RSS / Atom の URL・1行に1つ・10個まで）</label>
+          <textarea id="newsFeeds" class="short"></textarea></div>
+        <div><label for="newsExclude">除外する語句（タイトルに含むものは選ばない・1行に1つ）</label>
+          <textarea id="newsExclude" class="short"></textarea></div>
+      </div>
       <h3>準備中画面の「テキスト」「ツール」</h3>
       <div class="grid4">
         <div><label for="textSize">テキストの大きさ（px）</label><input type="number" id="textSize" min="8" max="300"></div>
@@ -139,7 +175,7 @@
   </section>
 
   <section class="step">
-    <h2><span class="n">4</span>チャイム時刻</h2>
+    <h2><span class="n">5</span>チャイム時刻</h2>
     <p class="hint">時刻になるとチャイムが鳴り、表示文字・画像・BGMに切り替わります。最初の時刻より前は「準備中画面」です。
       BGMは次の時刻の2秒前からフェードアウトします。</p>
     <p class="hint" id="ttNote"></p>
@@ -159,20 +195,20 @@
   </section>
 
   <section class="step">
-    <h2><span class="n">5</span>準備中画面の「テキスト」「ツール」（科目ごと）</h2>
+    <h2><span class="n">6</span>準備中画面の「テキスト」「ツール」（科目ごと）</h2>
     <p class="hint">日別計画表の訓練内容から番号（①②…）と「（実技）」「（学科）」を外した単位でまとめています。ここに入れた内容が、その科目の全日に表示されます。</p>
     <div class="scroll"><table class="mx plan" id="subjTable"></table></div>
   </section>
 
   <section class="step">
-    <h2><span class="n">6</span>日ごとの上書き</h2>
+    <h2><span class="n">7</span>日ごとの上書き</h2>
     <p class="hint">特定の日だけ変えたいときに入力します。空欄の日は、科目ごとの設定（薄い文字）が表示されます。</p>
     <label class="chk"><input type="checkbox" id="showPast">過ぎた日も表示する</label>
     <div class="scroll"><table class="mx plan" id="dayTable"></table></div>
   </section>
 
   <section class="step">
-    <h2><span class="n">7</span>手動切替の項目（デスクトップ版の「表示設定.txt」）</h2>
+    <h2><span class="n">8</span>手動切替の項目（デスクトップ版の「表示設定.txt」）</h2>
     <p class="hint">チャイム表示画面の「手動切替」から選んで表示できる項目です（例：小テスト中、休講、避難訓練）。</p>
     <div class="row gap-y"><button type="button" id="addDisp" class="fixed">行を追加</button></div>
     <div class="scroll"><table class="mx plan" id="dispTable"></table></div>
@@ -185,6 +221,7 @@
     <div id="tsTop" class="tsSlot" hidden></div>
     <div id="tsBtm" class="tsSlot" hidden></div>
     <div id="tsToday" class="today" hidden></div>
+    <div id="tsNews" class="today" hidden></div>
     <div id="tsClock" class="tsClock"><div id="tsDate"></div><div id="tsTime"></div><div id="tsNext"></div></div>
     <div class="tsBar"><span id="tsLabel"></span>
       <span class="tsBtns"><span id="tsHint"></span>

@@ -105,6 +105,10 @@
   - チャイムの設定の「2. 今日は何の日？」で今日の内容の確認・取り直し、「基本設定」で表示の有無・文字の大きさ・位置を変更できます
   - 画面の下端に収まらないときは、文字を自動で小さくします（設定の大きさの40%まで。それでも入らないときは項目を減らします）
   - サーバーから `ja.wikipedia.org` に接続できる必要があります。画面には出典（Wikipedia・CC BY-SA）を表示します
+- 「チャイム時刻」の表示文字に「**休憩**」を含む時刻の画面では、下半分に **Java・Python 関連のニュース**（見出し・媒体名・日付、最大5件）を表示します（中央の文字は上に寄せる）
+  - 取得元（初期値）：Google ニュースの検索結果（日本語）、Publickey、＠IT の RSS / Atom。タイトルに Java・Python 関連の語句（Java、Python、JDK、Spring Boot、Django、Flask など）を含む記事だけを選び、「ジャワ」「コーヒー」などを含む記事は除きます（「JavaScript」は Java と数えません）
+  - サーバーが取得して `~/apps/tools-data/news.json` に保存し、3時間ごとに新しくします。表示画面は日付が変わると読み込み直すので、その時点の内容になります
+  - チャイムの設定の「休憩中のニュース」で取得状況の確認・取り直し、「基本設定」→「画像と文字の表示」で、表示の有無・ニュースを出す語（例：休憩・昼休み）・件数・大きさ・位置・取得元・選ぶ語句・除外する語句を変更できます
 - 保存場所：設定は `~/apps/tools-data/chime.json`（1つ前は `chime.prev.json`）、素材は `~/apps/tools-data/media/`
 - 素材とチャイム表示画面はパスワードなしで見られます。**個人情報を含む画像・文字は使わないでください**
 
@@ -145,6 +149,7 @@ tools/
 │   ├─ __init__.py         画面と講師用の保存・アップロード
 │   ├─ store.py            チャイム設定と素材の保存・検査
 │   ├─ today.py            「今日は何の日？」の取得（Wikipedia）・解析・保存
+│   ├─ news.py             休憩中の Java・Python ニュースの取得（RSS / Atom）・選別・保存
 │   ├─ start_chime.bat     教室のPC用の起動ファイル（Edge のアプリモード・最大化）
 │   ├─ templates/chime/chime.html / admin.html
 │   └─ static/chime.js / chime.css / admin_chime.js / chime_common.js

@@ -39,6 +39,17 @@ DEFAULT_STYLE = {
     "today_top": 55,            # 表示位置（画面の上端から％）
 }
 
+from .news import DEFAULT_EXCLUDE, DEFAULT_FEEDS, DEFAULT_WORDS
+
+DEFAULT_NEWS = {
+    "enabled": True,
+    "triggers": ["休憩"],       # 表示文字にこの語を含む時刻の画面に、ニュースを表示する
+    "feeds": DEFAULT_FEEDS,    # RSS / Atom の URL
+    "words": DEFAULT_WORDS,    # タイトルにこの語を含む記事を選ぶ
+    "exclude": DEFAULT_EXCLUDE,  # これを含む記事は選ばない
+    "size": 34, "top": 55, "max": 5,
+}
+
 DEFAULT_CHIME = {
     "updated": None,
     "chime_sound": "",        # 空欄＝標準の電子音
@@ -50,6 +61,7 @@ DEFAULT_CHIME = {
     "subjects": {},
     "days": {},
     "displays": [],
+    "news": DEFAULT_NEWS,
 }
 
 COLOR_RE = re.compile(r"^(#[0-9a-fA-F]{3,8}|[a-zA-Z]{1,20})$")
@@ -73,6 +85,7 @@ class Store:
         out = json.loads(json.dumps(DEFAULT_CHIME))
         out.update({k: v for k, v in data.items() if k in DEFAULT_CHIME})
         out["style"] = {**DEFAULT_STYLE, **(data.get("style") or {})}
+        out["news"] = {**DEFAULT_NEWS, **(data.get("news") or {})}
         return out
 
     def save(self, raw):
@@ -210,7 +223,35 @@ class Store:
                 "image": file(e.get("image"), IMAGE_EXT, f"{label} の画像"),
             })
 
+        nw = raw.get("news") or {}
+
+        def words(v, n, what, maxlen=40):
+            lst = v if isinstance(v, list) else str(v or "").splitlines()
+            lst = [str(x).strip() for x in lst if str(x).strip()]
+            if len(lst) > n:
+                raise ValueError(f"{what}は{n}個までです")
+            for x in lst:
+                if len(x) > maxlen:
+                    raise ValueError(f"{what}「{x[:20]}…」が長すぎます（{maxlen}文字まで）")
+            return lst
+
+        feeds = words(nw.get("feeds", DEFAULT_FEEDS), 10, "ニュースの取得元", 400)
+        for u in feeds:
+            if not re.match(r"^https://[^\s<>\"]+$", u):
+                raise ValueError(f"ニュースの取得元は https:// で始まる URL を入力してください：{u[:40]}")
+        news = {
+            "enabled": bool(nw.get("enabled", True)),
+            "triggers": words(nw.get("triggers", ["休憩"]), 10, "ニュースを表示する語"),
+            "feeds": feeds,
+            "words": words(nw.get("words", DEFAULT_WORDS), 50, "ニュースを選ぶ語句"),
+            "exclude": words(nw.get("exclude", DEFAULT_EXCLUDE), 50, "除外する語句"),
+            "size": num(nw.get("size", 34), 10, 120, "ニュースの文字の大きさ"),
+            "top": num(nw.get("top", 55), 10, 90, "ニュースの位置"),
+            "max": num(nw.get("max", 5), 1, 10, "ニュースの件数"),
+        }
+
         return {
+            "news": news,
             "chime_sound": file(raw.get("chime_sound"), AUDIO_EXT, "チャイム音"),
             "standby_image": file(raw.get("standby_image"), IMAGE_EXT, "準備中画面の画像"),
             "standby_bgm": file(raw.get("standby_bgm"), AUDIO_EXT, "準備中画面のBGM"),

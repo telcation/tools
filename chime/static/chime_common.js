@@ -151,21 +151,56 @@ export function showToday(el, data, style, on) {
   src.className = "todaySrc";
   src.textContent = `出典：Wikipedia「${data.title || ""}」（CC BY-SA）`;
   el.append(src);
-  fitToday(el, style);
-  // 画面の大きさが変わったとき（最大化・全画面の切り替えなど）も収まるように合わせ直す
-  if (!el.dataset.fitBound) {
-    el.dataset.fitBound = "1";
-    window.addEventListener("resize", () => { if (!el.hidden && el.__style) fitToday(el, el.__style); });
-  }
+  fitPanel(el, style.today_size ?? 34);
+}
+
+// 休憩中の画面に出す Java・Python のニュースか（表示文字に設定の語を含む）
+export function isNewsTime(text, news) {
+  if (!news || news.enabled === false) return false;
+  const t = String(text || "");
+  return (news.triggers || []).some((w) => w && t.includes(w));
+}
+
+// 休憩中の画面の「Java・Python のニュース」（見出し・媒体名・日付）
+export function showNews(el, data, news, on) {
+  const items = (data && data.items) || [];
+  const ok = on && news && news.enabled !== false && items.length > 0;
+  el.hidden = !ok;
+  // ニュースを出すときは、中央の大きな文字（「休憩」など）を上に寄せて重ならないようにする
+  if (el.parentElement) el.parentElement.classList.toggle("hasNews", !!ok);
+  if (!ok) return;
+  el.replaceChildren();
+  el.style.top = `${news.top ?? 55}vh`;
+  const h = document.createElement("div");
+  h.className = "todayTitle";
+  h.textContent = "Java・Python のニュース";
+  const ul = document.createElement("ul");
+  ul.className = "newsList";
+  items.slice(0, news.max ?? 5).forEach((n) => {
+    const li = document.createElement("li");
+    const t = document.createElement("span"); t.textContent = n.title;
+    const m = document.createElement("span"); m.className = "newsMeta";
+    const md = n.date ? n.date.slice(5).replace("-", "/").replace(/^0/, "").replace("/0", "/") : "";
+    m.textContent = `　${[n.source, md].filter(Boolean).join("・")}`;
+    li.append(t, m); ul.append(li);
+  });
+  const src = document.createElement("div");
+  src.className = "todaySrc";
+  src.textContent = data.fetched ? `${data.fetched} 取得` : "";
+  el.append(h, ul, src);
+  fitPanel(el, news.size ?? 34);
 }
 
 // 画面の下端（下の帯・ボタンの分は空ける）に収まるまで、文字を小さくする（設定の大きさの40%まで）。
-// それでも入らないときは、項目を後ろから減らす
-const TODAY_BOTTOM_GAP = 56;
-function fitToday(el, style) {
-  el.__style = style;
-  const base = style.today_size ?? 34;
-  const avail = () => window.innerHeight - el.getBoundingClientRect().top - TODAY_BOTTOM_GAP;
+// それでも入らないときは、項目の多い列から後ろの項目を減らす。画面の大きさが変わったときも合わせ直す
+const PANEL_BOTTOM_GAP = 56;
+function fitPanel(el, base) {
+  el.__base = base;
+  if (!el.dataset.fitBound) {
+    el.dataset.fitBound = "1";
+    window.addEventListener("resize", () => { if (!el.hidden && el.__base) fitPanel(el, el.__base); });
+  }
+  const avail = () => window.innerHeight - el.getBoundingClientRect().top - PANEL_BOTTOM_GAP;
   el.querySelectorAll("li[data-cut]").forEach((li) => { li.hidden = false; delete li.dataset.cut; });
   let size = base;
   el.style.fontSize = `${size}px`;
@@ -173,7 +208,6 @@ function fitToday(el, style) {
     size -= 1;
     el.style.fontSize = `${size}px`;
   }
-  // まだはみ出すとき：いちばん項目の多い列から1件ずつ隠す
   let guard = 20;
   while (el.scrollHeight > avail() && guard-- > 0) {
     const lists = [...el.querySelectorAll("ul")].map((ul) => [...ul.querySelectorAll("li:not([hidden])")]);

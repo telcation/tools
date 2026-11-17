@@ -12,12 +12,14 @@ from flask import Blueprint, redirect, render_template, request, send_from_direc
 
 import core
 from .store import Store
+from .news import News
 from .today import Today
 
 bp = Blueprint("chime", __name__, template_folder="templates",
                static_folder="static", static_url_path="/static")
 STORE = Store(core.DATA_DIR)
 TODAY = Today(core.DATA_DIR)
+NEWS = News(core.DATA_DIR)
 
 
 def today_data():
@@ -27,10 +29,19 @@ def today_data():
     return TODAY.get()
 
 
+def news_data(cfg=None):
+    """休憩中に表示するニュース（表示しない設定・取得元なしのときは取りに行かない）"""
+    n = (cfg or STORE.load())["news"]
+    if not n.get("enabled", True) or not n.get("feeds"):
+        return None
+    return NEWS.get(n["feeds"], n["words"], n["exclude"])
+
+
 @bp.route("/")
 def index():
     return render_template("chime/chime.html", plan_json=core.plan_json_for_page(),
-                           chime_json=core.to_page_json(STORE.load()), today_json=core.to_page_json(today_data()))
+                           chime_json=core.to_page_json(STORE.load()), today_json=core.to_page_json(today_data()),
+                           news_json=core.to_page_json(news_data()))
 
 
 @bp.route("/media/<path:name>")
@@ -41,12 +52,15 @@ def media(name):
 def render_admin(message="", status=200):
     media = STORE.list_media()
     today = today_data()
+    news = news_data()
     return render_template("chime/admin.html", message=message,
                            plan_json=core.plan_json_for_page(),
                            chime_json=core.to_page_json(STORE.load()),
                            media_json=core.to_page_json(media),
                            media=media, usage=STORE.usage(),
-                           today=today, today_json=core.to_page_json(today)), status
+                           today=today, today_json=core.to_page_json(today),
+                           news=news, news_json=core.to_page_json(news),
+                           cfg_news=STORE.load()["news"]), status
 
 
 def back(msg):
@@ -93,6 +107,18 @@ def admin_today_refresh():
     if d.get("error"):
         return back(f"「今日は何の日？」を取得できませんでした（{d['error']}）")
     return back(f"「今日は何の日？」を取得しました（記念日 {len(d['anniversaries'])} 件・IT関連 {len(d['it_events'])} 件）")
+
+
+@bp.route("/admin/news", methods=["POST"])
+def admin_news_refresh():
+    """ニュースを取り直す（保存済みの設定の取得元・語句で）"""
+    core.require_admin_post()
+    n = STORE.load()["news"]
+    d = NEWS.refresh(n["feeds"], n["words"], n["exclude"])
+    msg = f"ニュースを取得しました（{len(d.get('items', []))} 件）"
+    if d.get("errors"):
+        msg += "。取得できなかった取得元：" + "／".join(d["errors"])
+    return back(msg)
 
 
 @bp.route("/admin/delete", methods=["POST"])
